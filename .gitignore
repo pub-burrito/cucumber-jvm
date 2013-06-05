@@ -1,11 +1,17 @@
+#Android Projects
+android/bin/
+android/gen/
+android/target/
+
+android-test/bin/
+android-test/gen/
+android-test/target/
+
 # IDE working files
 *.iws
 *.ipr
 *.iml
 .idea/
-.settings
-.project
-.classpath
 
 
 # Build directories

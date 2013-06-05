@@ -37,14 +37,7 @@
             <version>${project.version}</version>
             <type>apklib</type>
         </dependency>
-        <dependency>
-            <groupId>info.cukes</groupId>
-            <artifactId>cucumber-core</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>info.cukes</groupId>
-            <artifactId>cucumber-java</artifactId>
-        </dependency>
+
     </dependencies>
 
     <build>
