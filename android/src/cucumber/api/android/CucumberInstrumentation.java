@@ -293,6 +293,8 @@ public class CucumberInstrumentation extends Instrumentation {
         public void result(Result result) {
             if (result.getError() != null) {
                 // If the result contains an error, report a failure.
+            	if(mTestResult == null)
+            		mTestResult = new Bundle(mResultTemplate);
                 mTestResult.putString(REPORT_KEY_STACK, result.getErrorMessage());
                 mTestResultCode = REPORT_VALUE_RESULT_FAILURE;
                 mTestResult.putString(Instrumentation.REPORT_KEY_STREAMRESULT, result.getErrorMessage());
