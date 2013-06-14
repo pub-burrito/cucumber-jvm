@@ -1,5 +1,11 @@
 package cucumber.api.android;
 
+import java.lang.annotation.Annotation;
+import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Properties;
+
 import android.app.Activity;
 import android.app.Instrumentation;
 import android.content.Context;
@@ -7,25 +13,32 @@ import android.os.Bundle;
 import android.os.Looper;
 import android.test.InstrumentationTestRunner;
 import android.util.Log;
+import cucumber.runtime.Backend;
+import cucumber.runtime.Runtime;
+import cucumber.runtime.RuntimeOptions;
 import cucumber.runtime.android.AndroidBackend;
 import cucumber.runtime.android.AndroidClasspathMethodScanner;
 import cucumber.runtime.android.AndroidFormatter;
 import cucumber.runtime.android.AndroidResourceLoader;
-import cucumber.runtime.Backend;
-import cucumber.runtime.Runtime;
-import cucumber.runtime.RuntimeOptions;
 import cucumber.runtime.io.ResourceLoader;
-import cucumber.runtime.model.*;
+import cucumber.runtime.model.CucumberExamples;
+import cucumber.runtime.model.CucumberFeature;
+import cucumber.runtime.model.CucumberScenario;
+import cucumber.runtime.model.CucumberScenarioOutline;
+import cucumber.runtime.model.CucumberTagStatement;
 import ext.android.test.ClassPathPackageInfoSource;
 import gherkin.formatter.Formatter;
 import gherkin.formatter.Reporter;
-import gherkin.formatter.model.*;
-
-import java.lang.annotation.Annotation;
-import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Properties;
+import gherkin.formatter.model.Background;
+import gherkin.formatter.model.Examples;
+import gherkin.formatter.model.ExamplesTableRow;
+import gherkin.formatter.model.Feature;
+import gherkin.formatter.model.Match;
+import gherkin.formatter.model.Result;
+import gherkin.formatter.model.Scenario;
+import gherkin.formatter.model.ScenarioOutline;
+import gherkin.formatter.model.Step;
+import gherkin.formatter.model.TagStatement;
 
 public class CucumberInstrumentation extends InstrumentationTestRunner {
     public static final String ARGUMENT_TEST_CLASS = "class";
@@ -64,6 +77,11 @@ public class CucumberInstrumentation extends InstrumentationTestRunner {
             testClass = testClass != null ? testClass : "null";
             mPackageOfTests = arguments.getString(ARGUMENT_TEST_PACKAGE);
 
+            if (testClass.indexOf("#") != -1) { //executing a particular method/feature
+            	mFeatures = testClass.substring(testClass.indexOf("#") + 1) + ".feature";
+            	testClass = testClass.substring(0, testClass.indexOf("#"));
+            }
+
             try {
                 Class<?> clazz = mClassLoader.loadClass(testClass);
                 boolean annotationWasPresent = readRunWithCucumberAnnotation(clazz);
@@ -98,7 +116,7 @@ public class CucumberInstrumentation extends InstrumentationTestRunner {
         String tagsCommandLineArgument = "";
         
         for (String tag : mTags) {
-			tagsCommandLineArgument += " -t " + tag + " ";
+			tagsCommandLineArgument += " -t " + tag.replaceAll(" ", "\\\\s") + " ";
 		}
         
         properties.setProperty("cucumber.options", tagsCommandLineArgument + String.format(" -g %s %s", mPackageOfTests, mFeatures));
@@ -120,7 +138,7 @@ public class CucumberInstrumentation extends InstrumentationTestRunner {
         if (annotation != null) {
             // isEmpty() only available in Android API 9+
             mPackageOfTests = annotation.glue().equals("") ? defaultGlue() : annotation.glue();
-            mFeatures = annotation.features().equals("") ? defaultFeatures() : annotation.features();
+            mFeatures = annotation.features().equals("") ? defaultFeatures() : annotation.features() + (mFeatures != null ? "/" + mFeatures : "");
             mTags = annotation.tags().equals(new String[] { }) ? defaultTags() : annotation.tags();
             return true;
         }

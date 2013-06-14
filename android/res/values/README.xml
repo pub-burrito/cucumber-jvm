@@ -1,0 +1,3 @@
+<resources>
+	<string name="README">Adding this file so we can commit a /res folder (git doesn\'t like empty folders)</string>
+</resources>
