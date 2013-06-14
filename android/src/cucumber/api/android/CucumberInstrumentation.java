@@ -5,6 +5,7 @@ import android.app.Instrumentation;
 import android.content.Context;
 import android.os.Bundle;
 import android.os.Looper;
+import android.test.InstrumentationTestRunner;
 import android.util.Log;
 import cucumber.runtime.android.AndroidBackend;
 import cucumber.runtime.android.AndroidClasspathMethodScanner;
@@ -26,7 +27,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
 
-public class CucumberInstrumentation extends Instrumentation {
+public class CucumberInstrumentation extends InstrumentationTestRunner {
     public static final String ARGUMENT_TEST_CLASS = "class";
     public static final String ARGUMENT_TEST_PACKAGE = "package";
     public static final String REPORT_VALUE_ID = "InstrumentationTestRunner";
@@ -49,7 +50,7 @@ public class CucumberInstrumentation extends Instrumentation {
 
     @Override
     public void onCreate(Bundle arguments) {
-        super.onCreate(arguments);
+//        super.onCreate(arguments);
 
         Context context = getContext();
         mClassLoader = context.getClassLoader();
@@ -58,7 +59,7 @@ public class CucumberInstrumentation extends Instrumentation {
         // If nothing works, default values will be used instead.
         if (arguments != null &&
                 (arguments.containsKey(ARGUMENT_TEST_CLASS) || arguments.containsKey(ARGUMENT_TEST_PACKAGE))) {
-
+        	
             String testClass = arguments.getString(ARGUMENT_TEST_CLASS);
             testClass = testClass != null ? testClass : "null";
             mPackageOfTests = arguments.getString(ARGUMENT_TEST_PACKAGE);
