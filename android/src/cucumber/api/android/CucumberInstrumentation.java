@@ -45,6 +45,7 @@ public class CucumberInstrumentation extends Instrumentation {
     private Runtime mRuntime;
     private String mPackageOfTests;
     private String mFeatures;
+    private String[] mTags;
 
     @Override
     public void onCreate(Bundle arguments) {
@@ -91,8 +92,15 @@ public class CucumberInstrumentation extends Instrumentation {
         Properties properties = new Properties();
         mPackageOfTests = mPackageOfTests != null ? mPackageOfTests : defaultGlue();
         mFeatures = mFeatures != null ? mFeatures : defaultFeatures();
-
-        properties.setProperty("cucumber.options", String.format("-g %s %s", mPackageOfTests, mFeatures));
+        mTags = mTags != null ? mTags : defaultTags();
+        
+        String tagsCommandLineArgument = "";
+        
+        for (String tag : mTags) {
+			tagsCommandLineArgument += " -t " + tag + " ";
+		}
+        
+        properties.setProperty("cucumber.options", tagsCommandLineArgument + String.format(" -g %s %s", mPackageOfTests, mFeatures));
         mRuntimeOptions = new RuntimeOptions(properties);
 
         mResourceLoader = new AndroidResourceLoader(context);
@@ -112,6 +120,7 @@ public class CucumberInstrumentation extends Instrumentation {
             // isEmpty() only available in Android API 9+
             mPackageOfTests = annotation.glue().equals("") ? defaultGlue() : annotation.glue();
             mFeatures = annotation.features().equals("") ? defaultFeatures() : annotation.features();
+            mTags = annotation.tags().equals(new String[] { }) ? defaultTags() : annotation.tags();
             return true;
         }
         return false;
@@ -123,6 +132,10 @@ public class CucumberInstrumentation extends Instrumentation {
 
     private String defaultGlue() {
         return getContext().getPackageName();
+    }
+    
+    private String[] defaultTags() {
+    	return new String[]{ };
     }
 
     @Override
@@ -304,6 +317,8 @@ public class CucumberInstrumentation extends Instrumentation {
                 String report = String.format("Missing step-definition\n\n%s\nfor step '%s'",
                         snippets.get(snippets.size() - 1),
                         mStep.getName());
+                if(mTestResult == null)
+            		mTestResult = new Bundle(mResultTemplate);
                 mTestResult.putString(REPORT_KEY_STACK, report);
                 mTestResultCode = REPORT_VALUE_RESULT_ERROR;
                 mTestResult.putString(Instrumentation.REPORT_KEY_STREAMRESULT,
