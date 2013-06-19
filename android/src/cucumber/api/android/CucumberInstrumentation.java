@@ -31,7 +31,6 @@ import gherkin.formatter.Formatter;
 import gherkin.formatter.Reporter;
 import gherkin.formatter.model.Background;
 import gherkin.formatter.model.Examples;
-import gherkin.formatter.model.ExamplesTableRow;
 import gherkin.formatter.model.Feature;
 import gherkin.formatter.model.Match;
 import gherkin.formatter.model.Result;
@@ -48,6 +47,7 @@ public class CucumberInstrumentation extends InstrumentationTestRunner {
     public static final String REPORT_KEY_NUM_CURRENT = "current";
     public static final String REPORT_KEY_NAME_CLASS = "class";
     public static final String REPORT_KEY_NAME_TEST = "test";
+    public static final String REPORT_KEY_NAME_WORD = "keyword";
     public static final int REPORT_VALUE_RESULT_START = 1;
     public static final int REPORT_VALUE_RESULT_ERROR = -1;
     public static final int REPORT_VALUE_RESULT_FAILURE = -2;
@@ -63,7 +63,6 @@ public class CucumberInstrumentation extends InstrumentationTestRunner {
 
     @Override
     public void onCreate(Bundle arguments) {
-//        super.onCreate(arguments);
 
         Context context = getContext();
         mClassLoader = context.getClassLoader();
@@ -170,9 +169,7 @@ public class CucumberInstrumentation extends InstrumentationTestRunner {
                     numScenarios++;
                 } else if (statement instanceof CucumberScenarioOutline) {
                     for (CucumberExamples examples : ((CucumberScenarioOutline) statement).getCucumberExamplesList()) {
-                        for (ExamplesTableRow row : examples.getExamples().getRows()) {
-                            numScenarios++;
-                        }
+                    	numScenarios += examples.getExamples().getRows().size();
                     }
                     numScenarios--; // subtract table header
                 }
@@ -213,6 +210,7 @@ public class CucumberInstrumentation extends InstrumentationTestRunner {
         private final AndroidFormatter mFormatter;
         private final Bundle mResultTemplate;
         private Bundle mTestResult;
+        private Bundle mParentBundle;
         private int mScenarioNum;
         private int mTestResultCode;
         private Feature mFeature;
@@ -246,13 +244,19 @@ public class CucumberInstrumentation extends InstrumentationTestRunner {
             reportLastResult();
             mFormatter.scenario(scenario);
             beginScenario(scenario);
+            
+           
         }
 
         @Override
         public void scenarioOutline(ScenarioOutline scenarioOutline) {
             reportLastResult();
+            
+            //a new scenario has been started - reset the parent bundle
+            mParentBundle = null;
             mFormatter.scenarioOutline(scenarioOutline);
             beginScenario(scenarioOutline);
+            mParentBundle = mTestResult;
         }
 
         @Override
@@ -310,11 +314,17 @@ public class CucumberInstrumentation extends InstrumentationTestRunner {
         private void beginScenario(TagStatement scenario) {
             String testClass = String.format("%s %s", mFeature.getKeyword(), mFeature.getName());
             String testName = String.format("%s %s", scenario.getKeyword(), scenario.getName());
+
+            if(mParentBundle != null){
+            	if(!scenario.getName().contains(mParentBundle.getString(REPORT_KEY_NAME_TEST).replace("Scenario Outline", "").trim()))
+            		mParentBundle = null;
+            }
+            
             mTestResult = new Bundle(mResultTemplate);
             mTestResult.putString(REPORT_KEY_NAME_CLASS, testClass);
             mTestResult.putString(REPORT_KEY_NAME_TEST, testName);
             mTestResult.putInt(REPORT_KEY_NUM_CURRENT, ++mScenarioNum);
-
+            mTestResult.putString(REPORT_KEY_NAME_WORD, scenario.getKeyword());
             mTestResult.putString(Instrumentation.REPORT_KEY_STREAMRESULT, String.format("\n%s:", testClass));
 
             sendStatus(REPORT_VALUE_RESULT_START, mTestResult);
@@ -324,20 +334,15 @@ public class CucumberInstrumentation extends InstrumentationTestRunner {
         @Override
         public void result(Result result) {
             if (result.getError() != null) {
-                // If the result contains an error, report a failure.
-            	if(mTestResult == null)
-            		mTestResult = new Bundle(mResultTemplate);
                 mTestResult.putString(REPORT_KEY_STACK, result.getErrorMessage());
                 mTestResultCode = REPORT_VALUE_RESULT_FAILURE;
                 mTestResult.putString(Instrumentation.REPORT_KEY_STREAMRESULT, result.getErrorMessage());
             } else if (result.getStatus().equals("undefined")) {
                 // There was a missing step definition, report an error.
                 List<String> snippets = mRuntime.getSnippets();
-                String report = String.format("Missing step-definition\n\n%s\nfor step '%s'",
-                        snippets.get(snippets.size() - 1),
-                        mStep.getName());
-                if(mTestResult == null)
-            		mTestResult = new Bundle(mResultTemplate);
+                String report = String.format("Missing step-definition for step '%s'\n\n%s",
+                        mStep.getName(),
+                        snippets.get(snippets.size() - 1));
                 mTestResult.putString(REPORT_KEY_STACK, report);
                 mTestResultCode = REPORT_VALUE_RESULT_ERROR;
                 mTestResult.putString(Instrumentation.REPORT_KEY_STREAMRESULT,
@@ -350,7 +355,14 @@ public class CucumberInstrumentation extends InstrumentationTestRunner {
                 if (mTestResultCode == 0) {
                     mTestResult.putString(Instrumentation.REPORT_KEY_STREAMRESULT, ".");
                 }
-                sendStatus(mTestResultCode, mTestResult);
+                if(mParentBundle != null){
+                	mParentBundle.putString(REPORT_KEY_STACK, mTestResult.getString(REPORT_KEY_NAME_TEST) + ".\n Error - " + mTestResult.getString(REPORT_KEY_STACK));
+                	sendStatus(mTestResultCode, mParentBundle);
+                }
+                if(mTestResult.getString(REPORT_KEY_NAME_WORD).equalsIgnoreCase("scenario") ||
+                   mTestResult.getString(REPORT_KEY_NAME_WORD).equalsIgnoreCase(CucumberScenarioOutline.OUTLINE_CHILD_KEYWORD)){
+                	sendStatus(mTestResultCode, mTestResult);
+                }
             }
         }
     }

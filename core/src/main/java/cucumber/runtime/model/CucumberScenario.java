@@ -35,8 +35,8 @@ public class CucumberScenario extends CucumberTagStatement {
         runtime.buildBackendWorlds(reporter, tags);
         runtime.runBeforeHooks(reporter, tags);
 
-        runBackground(formatter, reporter, runtime);
         format(formatter);
+        runBackground(formatter, reporter, runtime);
         runSteps(formatter, reporter, runtime);
 
         runtime.runAfterHooks(reporter, tags);
@@ -49,4 +49,5 @@ public class CucumberScenario extends CucumberTagStatement {
             cucumberBackground.runSteps(formatter, reporter, runtime);
         }
     }
+
 }

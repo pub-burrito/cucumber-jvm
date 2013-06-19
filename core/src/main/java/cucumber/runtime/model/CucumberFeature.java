@@ -29,10 +29,7 @@ public class CucumberFeature {
     private I18n i18n;
     private CucumberScenarioOutline currentScenarioOutline;
 
-    public static List<CucumberFeature> load(ResourceLoader resourceLoader, List<String> featurePaths, final List<Object> filters) {
-        System.err.println(featurePaths);
-        System.err.println(filters);
-    	
+    public static List<CucumberFeature> load(ResourceLoader resourceLoader, List<String> featurePaths, final List<Object> filters) {    	
     	final List<CucumberFeature> cucumberFeatures = new ArrayList<CucumberFeature>();
         final FeatureBuilder builder = new FeatureBuilder(cucumberFeatures);
         boolean resourceFound = false;

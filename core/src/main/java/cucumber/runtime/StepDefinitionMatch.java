@@ -1,8 +1,6 @@
 package cucumber.runtime;
 
-import cucumber.api.DataTable;
-import cucumber.runtime.table.TableConverter;
-import cucumber.runtime.xstream.LocalizedXStreams;
+import static gherkin.util.FixJava.map;
 import gherkin.I18n;
 import gherkin.formatter.Argument;
 import gherkin.formatter.model.DataTableRow;
@@ -15,8 +13,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
-import static gherkin.util.FixJava.map;
+import cucumber.api.DataTable;
+import cucumber.runtime.table.TableConverter;
+import cucumber.runtime.xstream.LocalizedXStreams;
 
+@SuppressWarnings("serial")
 public class StepDefinitionMatch extends Match {
     private final StepDefinition stepDefinition;
     private final transient String uri;
