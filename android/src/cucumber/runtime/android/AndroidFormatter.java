@@ -1,10 +1,16 @@
 package cucumber.runtime.android;
 
-import android.util.Log;
 import gherkin.formatter.Formatter;
-import gherkin.formatter.model.*;
+import gherkin.formatter.model.Background;
+import gherkin.formatter.model.Examples;
+import gherkin.formatter.model.Feature;
+import gherkin.formatter.model.Scenario;
+import gherkin.formatter.model.ScenarioOutline;
+import gherkin.formatter.model.Step;
 
 import java.util.List;
+
+import android.util.Log;
 
 public class AndroidFormatter implements Formatter {
     private final String mLogtag;
@@ -41,7 +47,7 @@ public class AndroidFormatter implements Formatter {
 
     @Override
     public void examples(Examples examples) {
-        Log.d(mLogtag, String.format("%s: %s", examples.getKeyword(), examples.getName()));
+        Log.d(mLogtag, String.format("%s: %s (#%s)", examples.getKeyword(), examples.getName(), examples.getRows() != null ? examples.getRows().size() : 0));
     }
 
     @Override

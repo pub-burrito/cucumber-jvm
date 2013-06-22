@@ -1,10 +1,5 @@
 package cucumber.runtime.android;
 
-import cucumber.runtime.JdkPatternArgumentMatcher;
-import cucumber.runtime.ParameterInfo;
-import cucumber.runtime.StepDefinition;
-import cucumber.runtime.Utils;
-import cucumber.runtime.java.ObjectFactory;
 import gherkin.I18n;
 import gherkin.formatter.Argument;
 import gherkin.formatter.model.Step;
@@ -13,6 +8,13 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Type;
 import java.util.List;
 import java.util.regex.Pattern;
+
+import cucumber.api.android.CucumberInstrumentation;
+import cucumber.runtime.JdkPatternArgumentMatcher;
+import cucumber.runtime.ParameterInfo;
+import cucumber.runtime.StepDefinition;
+import cucumber.runtime.Utils;
+import cucumber.runtime.java.ObjectFactory;
 
 class AndroidJavaStepDefinition implements StepDefinition {
     private final Method mMethod;
@@ -32,7 +34,9 @@ class AndroidJavaStepDefinition implements StepDefinition {
     }
 
     public void execute(I18n i18n, Object[] args) throws Throwable {
-        Utils.invoke(mObjectFactory.getInstance(mMethod.getDeclaringClass()), mMethod, mTimeout, args);
+    	if (!CucumberInstrumentation.skip) {
+    		Utils.invoke(mObjectFactory.getInstance(mMethod.getDeclaringClass()), mMethod, mTimeout, args);
+    	}
     }
 
     public List<Argument> matchedArguments(Step step) {

@@ -5,6 +5,7 @@ import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
+import java.util.Set;
 
 import android.app.Activity;
 import android.app.Instrumentation;
@@ -48,6 +49,7 @@ public class CucumberInstrumentation extends InstrumentationTestRunner {
     public static final String REPORT_KEY_NAME_CLASS = "class";
     public static final String REPORT_KEY_NAME_TEST = "test";
     public static final String REPORT_KEY_NAME_WORD = "keyword";
+    public static final String REPORT_KEY_EXAMPLES = "examples";
     public static final int REPORT_VALUE_RESULT_START = 1;
     public static final int REPORT_VALUE_RESULT_ERROR = -1;
     public static final int REPORT_VALUE_RESULT_FAILURE = -2;
@@ -60,12 +62,20 @@ public class CucumberInstrumentation extends InstrumentationTestRunner {
     private String mPackageOfTests;
     private String mFeatures;
     private String[] mTags;
+    
+    public static boolean skip = false;
 
     @Override
     public void onCreate(Bundle arguments) {
-
+    	skip = arguments != null && "true".equals(arguments.getString("log"));
+    	
         Context context = getContext();
         mClassLoader = context.getClassLoader();
+        
+		Set<String> keySet = arguments.keySet();
+		for (String string : keySet) {
+			Log.i(TAG, "Key: " + string + ": " + arguments.getString(string));
+		}
 
         // For glue and features either use the provided arguments or try to find a RunWithCucumber annotated class.
         // If nothing works, default values will be used instead.
@@ -126,7 +136,8 @@ public class CucumberInstrumentation extends InstrumentationTestRunner {
         backends.add(new AndroidBackend(this));
         mRuntime = new Runtime(mResourceLoader, mClassLoader, backends, mRuntimeOptions);
 
-        start();
+    	super.onCreate(arguments);
+        //start();
     }
 
     /**
@@ -158,7 +169,7 @@ public class CucumberInstrumentation extends InstrumentationTestRunner {
 
     @Override
     public void onStart() {
-        Looper.prepare();
+    	Looper.prepare();
 
         List<CucumberFeature> cucumberFeatures = mRuntimeOptions.cucumberFeatures(mResourceLoader);
         int numScenarios = 0;
@@ -182,8 +193,9 @@ public class CucumberInstrumentation extends InstrumentationTestRunner {
 
         for (CucumberFeature cucumberFeature : cucumberFeatures) {
             Formatter formatter = mRuntimeOptions.formatter(mClassLoader);
-            cucumberFeature.run(formatter, reporter, mRuntime);
+            	cucumberFeature.run(formatter, reporter, mRuntime);
         }
+        
         Formatter formatter = mRuntimeOptions.formatter(mClassLoader);
 
         formatter.done();
@@ -244,8 +256,6 @@ public class CucumberInstrumentation extends InstrumentationTestRunner {
             reportLastResult();
             mFormatter.scenario(scenario);
             beginScenario(scenario);
-            
-           
         }
 
         @Override
@@ -257,11 +267,17 @@ public class CucumberInstrumentation extends InstrumentationTestRunner {
             mFormatter.scenarioOutline(scenarioOutline);
             beginScenario(scenarioOutline);
             mParentBundle = mTestResult;
+            
+            Log.i(TAG, "Outline map: " + scenarioOutline.toMap());
         }
 
         @Override
         public void examples(Examples examples) {
             mFormatter.examples(examples);
+            
+            if (mParentBundle != null) {
+            	mParentBundle.putInt(REPORT_KEY_EXAMPLES, examples.getRows().size() - 1); //discounting header
+            }
         }
 
         @Override
@@ -355,12 +371,26 @@ public class CucumberInstrumentation extends InstrumentationTestRunner {
                 if (mTestResultCode == 0) {
                     mTestResult.putString(Instrumentation.REPORT_KEY_STREAMRESULT, ".");
                 }
-                if(mParentBundle != null){
-                	mParentBundle.putString(REPORT_KEY_STACK, mTestResult.getString(REPORT_KEY_NAME_TEST) + ".\n Error - " + mTestResult.getString(REPORT_KEY_STACK));
-                	sendStatus(mTestResultCode, mParentBundle);
-                }
-                if(mTestResult.getString(REPORT_KEY_NAME_WORD).equalsIgnoreCase("scenario") ||
-                   mTestResult.getString(REPORT_KEY_NAME_WORD).equalsIgnoreCase(CucumberScenarioOutline.OUTLINE_CHILD_KEYWORD)){
+                
+                boolean isIndividualScenario = mTestResult.getString(REPORT_KEY_NAME_WORD).equalsIgnoreCase("scenario");
+				boolean isOutlineScenario = mTestResult.getString(REPORT_KEY_NAME_WORD).equalsIgnoreCase(CucumberScenarioOutline.OUTLINE_CHILD_KEYWORD);
+				
+				int current = mTestResult.getInt(REPORT_KEY_NUM_CURRENT);
+				int parentNum = mParentBundle != null ? mParentBundle.getInt(REPORT_KEY_NUM_CURRENT) : -1;
+				int parentLastChildNum = mParentBundle != null ? parentNum + mParentBundle.getInt(REPORT_KEY_EXAMPLES) : -1;
+
+				//report child scenario status onto parent outline
+				if (mTestResultCode == REPORT_VALUE_RESULT_FAILURE) {
+	                if (mParentBundle != null && mParentBundle != mTestResult) {
+	                	mParentBundle.putString(REPORT_KEY_STACK, mTestResult.getString(REPORT_KEY_NAME_TEST) + ".\n Error - " + mTestResult.getString(REPORT_KEY_STACK));
+	                	sendStatus(mTestResultCode, mParentBundle);
+	                }
+	                
+				} else if (parentLastChildNum == current) {
+					sendStatus(mTestResultCode, mParentBundle);
+				}
+
+				if (isIndividualScenario || isOutlineScenario){
                 	sendStatus(mTestResultCode, mTestResult);
                 }
             }
