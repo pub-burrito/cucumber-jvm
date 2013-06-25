@@ -207,7 +207,7 @@ public class CucumberInstrumentation extends InstrumentationTestRunner {
 
     private void printSummary() {
         for (Throwable t : mRuntime.getErrors()) {
-            Log.e(TAG, t.toString());
+            Log.e(TAG, "Error running instrumentation", t);
         }
         for (String s : mRuntime.getSnippets()) {
             Log.w(TAG, s);
