@@ -87,7 +87,7 @@ public class CucumberInstrumentation extends InstrumentationTestRunner {
             mPackageOfTests = arguments.getString(ARGUMENT_TEST_PACKAGE);
 
             if (testClass.indexOf("#") != -1) { //executing a particular method/feature
-            	mFeatures = testClass.substring(testClass.indexOf("#") + 1) + ".feature";
+            	mFeatures = testClass.substring(testClass.indexOf("#") + 1).replaceAll("__", "/") + ".feature";
             	testClass = testClass.substring(0, testClass.indexOf("#"));
             }
 
