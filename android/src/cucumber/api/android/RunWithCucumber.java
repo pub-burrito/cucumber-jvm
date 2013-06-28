@@ -21,8 +21,14 @@ public @interface RunWithCucumber {
     String features() default "features";
     
     /**
-     * Set the tags that will filter out and run specific feature files.
-     * @return default is " "
+     * Set the tags that will filter out and run specific feature files. Use & to separate tags to be applies in conjunction and , for disjunctions.
+     * @return default is ""
      */
-    String[] tags() default { };
+    String tags() default "";
+    
+    /**
+     * Set a regular expression that will filter out and run specific matched features/scenarios.
+     * @return default is ""
+     */
+    String filter() default "";
 }

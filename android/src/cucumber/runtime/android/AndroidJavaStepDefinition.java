@@ -9,6 +9,7 @@ import java.lang.reflect.Type;
 import java.util.List;
 import java.util.regex.Pattern;
 
+import android.util.Log;
 import cucumber.api.android.CucumberInstrumentation;
 import cucumber.runtime.JdkPatternArgumentMatcher;
 import cucumber.runtime.ParameterInfo;
@@ -35,7 +36,11 @@ class AndroidJavaStepDefinition implements StepDefinition {
 
     public void execute(I18n i18n, Object[] args) throws Throwable {
     	if (!CucumberInstrumentation.skip) {
-    		Utils.invoke(mObjectFactory.getInstance(mMethod.getDeclaringClass()), mMethod, mTimeout, args);
+    		Object stepDefinitionInstance = mObjectFactory.getInstance(mMethod.getDeclaringClass());
+    		
+    		Log.d(CucumberInstrumentation.TAG, "- Executing step definition " + stepDefinitionInstance + "." + mMethod.getName());
+    		
+			Utils.invoke(stepDefinitionInstance, mMethod, mTimeout, args);
     	}
     }
 

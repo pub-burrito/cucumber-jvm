@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
 import java.util.Set;
+import java.util.TreeMap;
 
 import android.app.Activity;
 import android.app.Instrumentation;
@@ -13,6 +14,7 @@ import android.content.Context;
 import android.os.Bundle;
 import android.os.Looper;
 import android.test.InstrumentationTestRunner;
+import android.text.TextUtils;
 import android.util.Log;
 import cucumber.runtime.Backend;
 import cucumber.runtime.Runtime;
@@ -62,6 +64,7 @@ public class CucumberInstrumentation extends InstrumentationTestRunner {
     private String mPackageOfTests;
     private String mFeatures;
     private String[] mTags;
+    private String mFilter;
     
     public static boolean skip = false;
 
@@ -76,6 +79,8 @@ public class CucumberInstrumentation extends InstrumentationTestRunner {
 		for (String string : keySet) {
 			Log.i(TAG, "Key: " + string + ": " + arguments.getString(string));
 		}
+		
+		Log.i(TAG, "Skip execution: " + skip);
 
         // For glue and features either use the provided arguments or try to find a RunWithCucumber annotated class.
         // If nothing works, default values will be used instead.
@@ -87,7 +92,9 @@ public class CucumberInstrumentation extends InstrumentationTestRunner {
             mPackageOfTests = arguments.getString(ARGUMENT_TEST_PACKAGE);
 
             if (testClass.indexOf("#") != -1) { //executing a particular method/feature
-            	mFeatures = testClass.substring(testClass.indexOf("#") + 1).replaceAll("__", "/") + ".feature";
+            	String method = testClass.substring(testClass.indexOf("#") + 1);
+            	
+            	mFeatures = method.replaceAll("__", "/") + ".feature";
             	testClass = testClass.substring(0, testClass.indexOf("#"));
             }
 
@@ -111,9 +118,21 @@ public class CucumberInstrumentation extends InstrumentationTestRunner {
                 Log.w(TAG, e.toString());
             }
         } else {
+        	TreeMap<String, Class<?>> cucumberRunners = new TreeMap<String, Class<?>>();
+        	
             ClassPathPackageInfoSource source = AndroidClasspathMethodScanner.classPathPackageInfoSource(context);
             for (Class<?> clazz : source.getPackageInfo(context.getPackageName()).getTopLevelClassesRecursive()) {
-                if (readRunWithCucumberAnnotation(clazz)) break;
+                if (readRunWithCucumberAnnotation(clazz)) {
+                	cucumberRunners.put( clazz.getName(), clazz );
+                }
+            }
+            
+            mFeatures = null;
+            
+            Log.i(TAG, "Runners found: " + cucumberRunners.keySet());
+            
+            if (!cucumberRunners.isEmpty()) {
+            	readRunWithCucumberAnnotation(cucumberRunners.values().iterator().next());
             }
         }
 
@@ -122,13 +141,27 @@ public class CucumberInstrumentation extends InstrumentationTestRunner {
         mFeatures = mFeatures != null ? mFeatures : defaultFeatures();
         mTags = mTags != null ? mTags : defaultTags();
         
-        String tagsCommandLineArgument = "";
+        //Command line arguments to runtime
+        StringBuffer cmdLineArgs = new StringBuffer();
         
-        for (String tag : mTags) {
-			tagsCommandLineArgument += " -t " + tag.replaceAll(" ", "\\\\s") + " ";
-		}
+        if (skip) {
+        	cmdLineArgs.append(" --dry-run ");
+        }
         
-        properties.setProperty("cucumber.options", tagsCommandLineArgument + String.format(" -g %s %s", mPackageOfTests, mFeatures));
+        if (!TextUtils.isEmpty( mFilter )) {
+        	cmdLineArgs.append(String.format(" --name %s ", mFilter.replaceAll(" ", "\\\\s")));
+        } else {
+	        for (String tag : mTags) {
+	        	cmdLineArgs.append(String.format(" --tags %s ", tag.replaceAll(" ", "\\\\s")));
+			}
+        }
+	        
+        cmdLineArgs.append(String.format(" --glue %s %s ", mPackageOfTests, mFeatures));
+        
+        properties.setProperty("cucumber.options", cmdLineArgs.toString());
+        
+        Log.i(TAG, "RuntimeOptions: " + properties);
+        
         mRuntimeOptions = new RuntimeOptions(properties);
 
         mResourceLoader = new AndroidResourceLoader(context);
@@ -149,7 +182,8 @@ public class CucumberInstrumentation extends InstrumentationTestRunner {
             // isEmpty() only available in Android API 9+
             mPackageOfTests = annotation.glue().equals("") ? defaultGlue() : annotation.glue();
             mFeatures = annotation.features().equals("") ? defaultFeatures() : annotation.features() + (mFeatures != null ? "/" + mFeatures : "");
-            mTags = annotation.tags().equals(new String[] { }) ? defaultTags() : annotation.tags();
+            mTags = annotation.tags().equals("") ? defaultTags() : annotation.tags().split( "\\s*&\\s*" );
+            mFilter = annotation.filter();
             return true;
         }
         return false;

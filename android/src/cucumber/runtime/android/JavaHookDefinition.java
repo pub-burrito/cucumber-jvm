@@ -1,17 +1,19 @@
 package cucumber.runtime.android;
 
-import cucumber.api.Scenario;
-import cucumber.runtime.CucumberException;
-import cucumber.runtime.HookDefinition;
-import cucumber.runtime.Utils;
-import cucumber.runtime.java.ObjectFactory;
+import static java.util.Arrays.asList;
 import gherkin.TagExpression;
 import gherkin.formatter.model.Tag;
 
 import java.lang.reflect.Method;
 import java.util.Collection;
 
-import static java.util.Arrays.asList;
+import android.util.Log;
+import cucumber.api.Scenario;
+import cucumber.api.android.CucumberInstrumentation;
+import cucumber.runtime.CucumberException;
+import cucumber.runtime.HookDefinition;
+import cucumber.runtime.Utils;
+import cucumber.runtime.java.ObjectFactory;
 
 class JavaHookDefinition implements HookDefinition {
 
@@ -37,7 +39,7 @@ class JavaHookDefinition implements HookDefinition {
 
     @Override
     public void execute(Scenario scenario) throws Throwable {
-        Object[] args;
+    	Object[] args;
         switch (method.getParameterTypes().length) {
             case 0:
                 args = new Object[0];
@@ -52,7 +54,13 @@ class JavaHookDefinition implements HookDefinition {
                 throw new CucumberException("Hooks must declare 0 or 1 arguments. " + method.toString());
         }
 
-        Utils.invoke(objectFactory.getInstance(method.getDeclaringClass()), method, timeout, args);
+    	if (!CucumberInstrumentation.skip) {
+    		final Object hookInstance = objectFactory.getInstance(method.getDeclaringClass());
+    		
+    		Log.d(CucumberInstrumentation.TAG, "- Executing step definition " + hookInstance + "." + method.getName());
+
+    		Utils.invoke(hookInstance, method, timeout, args);
+    	}
     }
 
     @Override
