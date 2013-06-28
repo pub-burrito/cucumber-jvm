@@ -55,11 +55,14 @@ class AndroidObjectFactory implements ObjectFactory {
                 Intent intent = new Intent();
                 intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
                 ((ActivityInstrumentationTestCase2) instance).setActivityIntent(intent);
+                
             } else if (instance instanceof InstrumentationTestCase) {
                 ((InstrumentationTestCase) instance).injectInstrumentation(mInstrumentation);
+                
             } else if (instance instanceof AndroidTestCase) {
                 ((AndroidTestCase) instance).setContext(mInstrumentation.getTargetContext());
             }
+            
             mInstances.put(type, instance);
             return instance;
         } catch (NoSuchMethodException e) {
