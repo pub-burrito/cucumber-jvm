@@ -186,14 +186,14 @@ gherkin.I18n.all.each { i18n ->
                                 </java>
 
                                 <!-- publish the gem to rubygems.org -->
-                                <echo message="Publishing Gem" />
+                                <!-- <echo message="Publishing Gem" />
                                 <java jar="${maven.dependency.org.jruby.jruby-complete.jar.path}" failonerror="true" fork="true">
                                     <env key="GEM_PATH" value="${basedir}/target/gems" />
                                     <arg value="-S" />
                                     <arg value="gem" />
                                     <arg value="push" />
                                     <arg value="cucumber-jvm-${project.parent.version}-java.gem" />
-                                </java>
+                                </java> -->
                             </target>
                         </configuration>
                         <goals>
