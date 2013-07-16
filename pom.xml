@@ -8,11 +8,11 @@
     <name>Cucumber-JVM</name>
     <url>http://cukes.info/</url>
 
-    <parent>
+    <!-- <parent>
         <groupId>org.sonatype.oss</groupId>
         <artifactId>oss-parent</artifactId>
         <version>7</version>
-    </parent>
+    </parent> -->
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -64,6 +64,17 @@
         <url>git://github.com/cucumber/cucumber-jvm.git</url>
         <tag>HEAD</tag>
     </scm>
+
+    <distributionManagement>
+     <repository>
+        <id>cloud.archiva.internal</id>
+        <url>http://cloud.local:8180/archiva/repository/internal/</url>
+     </repository>
+     <snapshotRepository>
+        <id>cloud.archiva.snapshots</id>
+        <url>http://cloud.local:8180/archiva/repository/snapshots/</url>
+     </snapshotRepository>
+    </distributionManagement>
 
     <dependencyManagement>
         <dependencies>
