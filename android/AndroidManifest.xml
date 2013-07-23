@@ -5,6 +5,7 @@
           package="cucumber.api.android">
           
     <uses-sdk
-            android:minSdkVersion="16"/>
+        	android:targetSdkVersion="17"
+            android:minSdkVersion="10"/>
     
 </manifest>
