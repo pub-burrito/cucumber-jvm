@@ -11,11 +11,13 @@ import java.util.TreeMap;
 import android.app.Activity;
 import android.app.Instrumentation;
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.Looper;
 import android.test.InstrumentationTestRunner;
 import android.text.TextUtils;
 import android.util.Log;
+import cucumber.deps.difflib.StringUtills;
 import cucumber.runtime.Backend;
 import cucumber.runtime.Runtime;
 import cucumber.runtime.RuntimeOptions;
@@ -67,10 +69,42 @@ public class CucumberInstrumentation extends InstrumentationTestRunner {
     private String mFilter;
     
     public static boolean skip = false;
+    
+    private SharedPreferences preferences() {
+    	return getContext().getSharedPreferences( getClass().getName(), Context.MODE_MULTI_PROCESS );
+
+    }
+    private boolean shouldSkip() {
+    	return 
+    		preferences()
+    		.getBoolean( "skip", false );
+    }
+    
+    private void markSkip(boolean skip) {
+    	if (skip)
+    	{
+    		CucumberInstrumentation.skip = skip;
+    	}
+    	
+    	preferences()
+    		.edit()
+    		.putBoolean( "skip", skip )
+    		.commit();
+    }
 
     @Override
     public void onCreate(Bundle arguments) {
     	skip = arguments != null && "true".equals(arguments.getString("log"));
+    	
+    	if (!skip) 
+    	{
+    		skip = shouldSkip();
+    	}
+    	
+    	if (skip)
+    	{
+    		markSkip( false ); //reset it
+    	}
     	
         Context context = getContext();
         mClassLoader = context.getClassLoader();
@@ -216,7 +250,7 @@ public class CucumberInstrumentation extends InstrumentationTestRunner {
                     for (CucumberExamples examples : ((CucumberScenarioOutline) statement).getCucumberExamplesList()) {
                     	numScenarios += examples.getExamples().getRows().size();
                     }
-                    numScenarios--; // subtract table header
+                    //numScenarios--; // subtract table header
                 }
             }
         }
@@ -240,9 +274,14 @@ public class CucumberInstrumentation extends InstrumentationTestRunner {
     }
 
     private void printSummary() {
+    	Log.i(TAG, "Summary:");
+    	Log.i(TAG, "- Errors: " + mRuntime.getErrors().size());
+    	Log.i(TAG, "- Snippets: " + mRuntime.getSnippets().size());
+    	
         for (Throwable t : mRuntime.getErrors()) {
             Log.e(TAG, "Error running instrumentation", t);
         }
+        
         for (String s : mRuntime.getSnippets()) {
             Log.w(TAG, s);
         }
@@ -383,20 +422,39 @@ public class CucumberInstrumentation extends InstrumentationTestRunner {
 
         @Override
         public void result(Result result) {
+        	
+        	/*
+        	 * Reporting errors or missing step definitions
+        	 */
             if (result.getError() != null) {
                 mTestResult.putString(REPORT_KEY_STACK, result.getErrorMessage());
                 mTestResultCode = REPORT_VALUE_RESULT_FAILURE;
                 mTestResult.putString(Instrumentation.REPORT_KEY_STREAMRESULT, result.getErrorMessage());
+                
             } else if (result.getStatus().equals("undefined")) {
                 // There was a missing step definition, report an error.
                 List<String> snippets = mRuntime.getSnippets();
-                String report = String.format("Missing step-definition for step '%s'\n\n%s",
-                        mStep.getName(),
-                        snippets.get(snippets.size() - 1));
+                
+                String report = 
+                	String.format(
+                		"\n/*\n* Missing step-definition%s: \n* Feature: '%s'\n*\n* Step: \n* %s \n*/\n\n%s",
+                		
+                		snippets.size() == 1 ? "" : "s",
+                        mFeature.getName(),
+                        mStep.getStackTraceElement( "" ),
+                        StringUtills.join( snippets, "\n" )
+                    );
+                
                 mTestResult.putString(REPORT_KEY_STACK, report);
                 mTestResultCode = REPORT_VALUE_RESULT_ERROR;
                 mTestResult.putString(Instrumentation.REPORT_KEY_STREAMRESULT,
-                        String.format("Missing step-definition: %s", mStep.getName()));
+                        String.format(
+                        	"Missing step-definition: %s", 
+                        	mStep.getName()
+                        )
+                );
+                
+                markSkip( true ); //make sure all tests are skipped when trying to execute them
             }
         }
 
@@ -406,27 +464,38 @@ public class CucumberInstrumentation extends InstrumentationTestRunner {
                     mTestResult.putString(Instrumentation.REPORT_KEY_STREAMRESULT, ".");
                 }
                 
-                boolean isIndividualScenario = mTestResult.getString(REPORT_KEY_NAME_WORD).equalsIgnoreCase("scenario");
-				boolean isOutlineScenario = mTestResult.getString(REPORT_KEY_NAME_WORD).equalsIgnoreCase(CucumberScenarioOutline.OUTLINE_CHILD_KEYWORD);
+                String keyword = mTestResult.getString(REPORT_KEY_NAME_WORD);
+                //mTestResult.remove(REPORT_KEY_NAME_WORD);
+                
+				boolean isIndividualScenario = keyword.equalsIgnoreCase("scenario");
+				boolean isOutlineScenario = keyword.equalsIgnoreCase(CucumberScenarioOutline.OUTLINE_CHILD_KEYWORD);
 				
 				int current = mTestResult.getInt(REPORT_KEY_NUM_CURRENT);
 				int parentNum = mParentBundle != null ? mParentBundle.getInt(REPORT_KEY_NUM_CURRENT) : -1;
 				int parentLastChildNum = mParentBundle != null ? parentNum + mParentBundle.getInt(REPORT_KEY_EXAMPLES) : -1;
 
+				
+				if (skip) 
+				{
+					mTestResult.putBoolean( "Skipped", true );
+				}
+				
+				if (isIndividualScenario || isOutlineScenario){
+                	sendStatus(mTestResultCode, mTestResult);
+                }
+				
 				//report child scenario status onto parent outline
 				if (mTestResultCode == REPORT_VALUE_RESULT_FAILURE) {
 	                if (mParentBundle != null && mParentBundle != mTestResult) {
+	                	
 	                	mParentBundle.putString(REPORT_KEY_STACK, mTestResult.getString(REPORT_KEY_NAME_TEST) + ".\n Error - " + mTestResult.getString(REPORT_KEY_STACK));
-	                	sendStatus(mTestResultCode, mParentBundle);
+	                	
+	                	sendStatus(REPORT_VALUE_RESULT_OK, mParentBundle);
 	                }
 	                
 				} else if (parentLastChildNum == current) {
 					sendStatus(mTestResultCode, mParentBundle);
 				}
-
-				if (isIndividualScenario || isOutlineScenario){
-                	sendStatus(mTestResultCode, mTestResult);
-                }
             }
         }
     }
