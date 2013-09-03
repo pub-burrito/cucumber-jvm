@@ -420,6 +420,8 @@ public class CucumberInstrumentation extends InstrumentationTestRunner {
             mTestResultCode = 0;
         }
 
+        List<String> lastSnippets = null;
+        
         @Override
         public void result(Result result) {
         	
@@ -434,6 +436,21 @@ public class CucumberInstrumentation extends InstrumentationTestRunner {
             } else if (result.getStatus().equals("undefined")) {
                 // There was a missing step definition, report an error.
                 List<String> snippets = mRuntime.getSnippets();
+                
+                if (lastSnippets != null) 
+                {
+                	List<String> newSnippets = new ArrayList<String>();
+
+                    for (String snippet : snippets) {
+                        if ( !lastSnippets.contains(snippet) ) {
+                            newSnippets.add( snippet );
+                        }
+                    }
+                    
+                    snippets = newSnippets;
+                }
+                
+                lastSnippets = new ArrayList<String>( snippets );
                 
                 String report = 
                 	String.format(
