@@ -38,7 +38,7 @@ class AndroidJavaStepDefinition implements StepDefinition {
     	if (!CucumberInstrumentation.skip) {
     		Object stepDefinitionInstance = mObjectFactory.getInstance(mMethod.getDeclaringClass());
     		
-    		Log.d(CucumberInstrumentation.TAG, "- Executing step definition " + stepDefinitionInstance + "." + mMethod.getName());
+    		Log.v(CucumberInstrumentation.TAG, "\t - Executing step definition " + stepDefinitionInstance + "." + mMethod.getName());
     		
 			Utils.invoke(stepDefinitionInstance, mMethod, mTimeout, args);
     	}

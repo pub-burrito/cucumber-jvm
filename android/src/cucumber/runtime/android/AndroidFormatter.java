@@ -27,7 +27,13 @@ public class AndroidFormatter implements Formatter {
 
     @Override
     public void feature(Feature feature) {
-        Log.d(mLogtag, String.format("%s: %s (%s)%n%s", feature.getKeyword(), feature.getName(), mUri, feature.getDescription()));
+        String description = String.format("* %s: %s (%s)%n%s *", feature.getKeyword(), feature.getName(), mUri, feature.getDescription());
+        
+        Log.d(mLogtag, "");
+        Log.d(mLogtag, description.replaceAll( ".", "*" ));
+		Log.d(mLogtag, description);
+		Log.d(mLogtag, description.replaceAll( ".", "*" ));
+		Log.d(mLogtag, "");
     }
 
     @Override
@@ -37,27 +43,35 @@ public class AndroidFormatter implements Formatter {
 
     @Override
     public void scenario(Scenario scenario) {
-        Log.d(mLogtag, String.format("%s: %s", scenario.getKeyword(), scenario.getName()));
+        String description = String.format("%s: %s", scenario.getKeyword(), scenario.getName());
+
+        Log.d(mLogtag, "");
+		Log.d(mLogtag, description);
+		Log.d(mLogtag, description.replaceAll( ".", "-" ));
     }
 
     @Override
     public void scenarioOutline(ScenarioOutline scenarioOutline) {
-        Log.d(mLogtag, String.format("%s: %s", scenarioOutline.getKeyword(), scenarioOutline.getName()));
+        String description = String.format("%s: %s", scenarioOutline.getKeyword(), scenarioOutline.getName());
+
+        Log.d(mLogtag, "");
+		Log.d(mLogtag, description);
+		Log.d(mLogtag, description.replaceAll( ".", "=" ));
     }
 
     @Override
     public void examples(Examples examples) {
-        Log.d(mLogtag, String.format("%s: %s (#%s)", examples.getKeyword(), examples.getName(), examples.getRows() != null ? examples.getRows().size() : 0));
+        Log.d(mLogtag, String.format("  %s: %s (#%s)", examples.getKeyword(), examples.getName(), examples.getRows() != null ? examples.getRows().size() : 0));
     }
 
     @Override
     public void step(Step step) {
-        Log.d(mLogtag, String.format("%s%s", step.getKeyword(), step.getName()));
+        Log.d(mLogtag, String.format("\t%s%s", step.getKeyword(), step.getName()));
     }
 
     @Override
     public void syntaxError(String state, String event, List<String> legalEvents, String uri, Integer line) {
-        Log.e(mLogtag, String.format("syntax error '%s' %s:%d", event, uri, line));
+        Log.e(mLogtag, String.format("Syntax error '%s' %s:%d", event, uri, line));
     }
 
     @Override

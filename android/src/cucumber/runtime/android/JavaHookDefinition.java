@@ -57,7 +57,7 @@ class JavaHookDefinition implements HookDefinition {
     	if (!CucumberInstrumentation.skip) {
     		final Object hookInstance = objectFactory.getInstance(method.getDeclaringClass());
     		
-    		Log.d(CucumberInstrumentation.TAG, "- Executing step definition " + hookInstance + "." + method.getName());
+    		Log.v(CucumberInstrumentation.TAG, "\t - Executing hook definition " + hookInstance + "." + method.getName());
 
     		Utils.invoke(hookInstance, method, timeout, args);
     	}
