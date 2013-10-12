@@ -8,6 +8,8 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.TreeMap;
 
+import org.xmlpull.v1.XmlSerializer;
+
 import android.app.Activity;
 import android.app.Instrumentation;
 import android.content.Context;
@@ -17,6 +19,7 @@ import android.os.Looper;
 import android.test.InstrumentationTestRunner;
 import android.text.TextUtils;
 import android.util.Log;
+import android.util.Xml;
 import cucumber.deps.difflib.StringUtills;
 import cucumber.runtime.Backend;
 import cucumber.runtime.Runtime;
@@ -59,6 +62,7 @@ public class CucumberInstrumentation extends InstrumentationTestRunner {
     public static final int REPORT_VALUE_RESULT_FAILURE = -2;
     public static final String REPORT_KEY_STACK = "stack";
     public static final String TAG = "cucumber-android";
+    private XmlSerializer mSerializaer;
     private RuntimeOptions mRuntimeOptions;
     private ResourceLoader mResourceLoader;
     private ClassLoader mClassLoader;
@@ -203,6 +207,16 @@ public class CucumberInstrumentation extends InstrumentationTestRunner {
         backends.add(new AndroidBackend(this));
         mRuntime = new Runtime(mResourceLoader, mClassLoader, backends, mRuntimeOptions);
 
+        mSerializaer = Xml.newSerializer();
+        try
+		{
+			mSerializaer.setOutput( getContext().openFileOutput( "junit.xml", Context.MODE_WORLD_WRITEABLE ), "UTF-8" );
+		}
+		catch ( Exception e )
+		{
+			System.err.printf( "Could not create junit.xml file.%s", e );
+		}
+        
     	super.onCreate(arguments);
         //start();
     }
@@ -266,6 +280,23 @@ public class CucumberInstrumentation extends InstrumentationTestRunner {
         
         Formatter formatter = mRuntimeOptions.formatter(mClassLoader);
 
+        try
+		{
+			mSerializaer.endTag( "", "feature" );
+		}
+		catch ( Exception e1 )
+		{
+			Log.e("", String.format("Error ending feature.%s", e1) );
+		}
+        try
+        {
+        	mSerializaer.flush();
+        	mSerializaer.endDocument();
+        }
+        catch (Exception e)
+        {
+        	Log.e("", String.format("Error ending junit xml.%s", e) );
+        }
         formatter.done();
         printSummary();
         formatter.close();
@@ -286,12 +317,17 @@ public class CucumberInstrumentation extends InstrumentationTestRunner {
             Log.w(TAG, s);
         }
     }
-
+    
     /**
      * This class reports the current test-state back to the framework.
      * It also wraps the AndroidFormatter to intercept important callbacks.
      */
     private class AndroidReporter implements Formatter, Reporter {
+    	
+    	public static final String FEATURE = "feature";
+    	public static final String SCENARIO_OUTLINE = "scenarioOutline";
+    	public static final String SCENARIO = "scenario";
+    	
         private final AndroidFormatter mFormatter;
         private final Bundle mResultTemplate;
         private Bundle mTestResult;
@@ -315,6 +351,20 @@ public class CucumberInstrumentation extends InstrumentationTestRunner {
 
         @Override
         public void feature(Feature feature) {
+        	try
+			{
+        		if ( mSerializaer.getName() != null && mSerializaer.getName().equals( FEATURE ) )
+        		{
+        			mSerializaer.endTag( "", FEATURE );
+        			mSerializaer.flush();
+        		}
+				mSerializaer.startTag( "", FEATURE );
+			}
+			catch ( Exception e )
+			{
+				Log.e("XML", String.format( "Unable to write feature tag. %s", e ) ) ;
+			}
+        	
             mFeature = feature;
             mFormatter.feature(feature);
         }
@@ -401,6 +451,15 @@ public class CucumberInstrumentation extends InstrumentationTestRunner {
         }
 
         private void beginScenario(TagStatement scenario) {
+        	try
+			{
+				mSerializaer.startTag( "", SCENARIO );
+			}
+			catch ( Exception e )
+			{
+				Log.e("XML", String.format( "Unable to write SCENARIO tag. %s", e ) ) ;
+			}
+        	
             String testClass = String.format("%s %s", mFeature.getKeyword(), mFeature.getName());
             String testName = String.format("%s %s", scenario.getKeyword(), scenario.getName());
 
@@ -418,6 +477,20 @@ public class CucumberInstrumentation extends InstrumentationTestRunner {
 
             sendStatus(REPORT_VALUE_RESULT_START, mTestResult);
             mTestResultCode = 0;
+            
+            try
+			{
+            	mSerializaer.attribute( "", REPORT_KEY_NAME_CLASS, testClass );
+            	mSerializaer.attribute( "", REPORT_KEY_NAME_TEST, testName );
+            	mSerializaer.attribute( "", REPORT_KEY_NUM_CURRENT, String.valueOf( mScenarioNum ) );
+            	mSerializaer.attribute( "", REPORT_KEY_NAME_WORD, scenario.getKeyword() );
+				mSerializaer.endTag( "", SCENARIO );
+				mSerializaer.flush();
+			}
+			catch ( Exception e )
+			{
+				System.err.printf( "Unable to end SCENARIO tag. %s", e );
+			}
         }
 
         List<String> lastSnippets = null;
