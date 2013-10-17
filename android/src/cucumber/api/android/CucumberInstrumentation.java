@@ -3,6 +3,8 @@ package cucumber.api.android;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Properties;
 import java.util.Set;
@@ -54,6 +56,7 @@ public class CucumberInstrumentation extends InstrumentationTestRunner {
     public static final String REPORT_KEY_NAME_TEST = "test";
     public static final String REPORT_KEY_NAME_WORD = "keyword";
     public static final String REPORT_KEY_EXAMPLES = "examples";
+    public static final String REPORT_KEY_STEPS = "steps";
     public static final int REPORT_VALUE_RESULT_START = 1;
     public static final int REPORT_VALUE_RESULT_ERROR = -1;
     public static final int REPORT_VALUE_RESULT_FAILURE = -2;
@@ -357,11 +360,69 @@ public class CucumberInstrumentation extends InstrumentationTestRunner {
             }
         }
 
-        @Override
+		@Override
         public void step(Step step) {
+			stopStepTracking();
+			
             mStep = step;
             mFormatter.step(step);
+            
+            startStepTracking();
         }
+
+		protected void startStepTracking()
+		{
+			if ( mTestResult != null )
+            {
+            	trackStep( 0.0 );
+            }
+		}
+
+		protected void stopStepTracking()
+		{
+			if ( mTestResult != null && mStep != null )
+            {
+            	trackStep( -1 );
+            }
+		}
+
+        protected Calendar stepTracker = Calendar.getInstance();
+        
+		@SuppressWarnings( "unchecked" )
+		protected void trackStep(double duration)
+		{
+			if ( duration == 0) 
+			{
+				stepTracker = Calendar.getInstance();
+			}
+			else if ( duration == -1 )
+			{
+				duration = ( Calendar.getInstance().getTimeInMillis() - stepTracker.getTimeInMillis() ) / 1000.0;
+			}
+			
+			LinkedHashMap<String, Double> steps = (LinkedHashMap<String, Double>) mTestResult.getSerializable( REPORT_KEY_STEPS );
+			
+			if ( steps == null )
+			{
+				steps = new LinkedHashMap<String, Double>();
+			}
+			
+			String stepId = stepId();
+			
+			if ( steps.containsKey( stepId ) )
+			{
+				duration+= steps.get( stepId );
+			}
+			
+			steps.put( stepId, duration );
+			
+			mTestResult.putSerializable( REPORT_KEY_STEPS, steps );
+		}
+
+		protected String stepId()
+		{
+			return String.format("%s %s", mStep.getKeyword(), mStep.getName() );
+		}
 
         @Override
         public void syntaxError(String state, String event, List<String> legalEvents, String uri, Integer line) {
@@ -408,9 +469,11 @@ public class CucumberInstrumentation extends InstrumentationTestRunner {
             String testClass = String.format("%s: %s", mFeature.getKeyword(), mFeature.getName()).replaceAll( " - |_", ". " );
             String testName = String.format("%s: %s", scenario.getKeyword(), scenario.getName());
 
-            if(mParentBundle != null){
-            	if(!scenario.getName().contains(mParentBundle.getString(REPORT_KEY_NAME_TEST).replace("Scenario Outline", "").trim()))
+            if (mParentBundle != null){
+            	if( !scenario.getName().contains(scenarioNameFromParent()) )
+            	{
             		mParentBundle = null;
+            	}
             }
             
             mTestResult = new Bundle(mResultTemplate);
@@ -423,6 +486,11 @@ public class CucumberInstrumentation extends InstrumentationTestRunner {
             sendStatus(REPORT_VALUE_RESULT_START, mTestResult);
             mTestResultCode = 0;
         }
+
+		protected String scenarioNameFromParent()
+		{
+			return mParentBundle.getString(REPORT_KEY_NAME_TEST).replace("Scenario Outline: ", "").trim();
+		}
 
         List<String> lastSnippets = null;
         
@@ -485,6 +553,8 @@ public class CucumberInstrumentation extends InstrumentationTestRunner {
                     mTestResult.putString(Instrumentation.REPORT_KEY_STREAMRESULT, ".");
                 }
                 
+                stopStepTracking();
+                
                 mLastTestResult = mTestResult;
                 
                 String keyword = mTestResult.getString(REPORT_KEY_NAME_WORD);
@@ -508,16 +578,16 @@ public class CucumberInstrumentation extends InstrumentationTestRunner {
                 }
 				
 				//report child scenario status onto parent outline
-				if (mTestResultCode == REPORT_VALUE_RESULT_FAILURE) {
-	                if (mParentBundle != null && mParentBundle != mTestResult) {
-	                	
+				if (mParentBundle != null && mParentBundle != mTestResult) 
+				{
+					if (mTestResultCode == REPORT_VALUE_RESULT_FAILURE) {
 	                	mParentBundle.putString(REPORT_KEY_STACK, mTestResult.getString(REPORT_KEY_NAME_TEST) + ".\n Error - " + mTestResult.getString(REPORT_KEY_STACK));
 	                	
 	                	sendStatus(REPORT_VALUE_RESULT_OK, mParentBundle);
-	                }
-	                
-				} else if (parentLastChildNum == current) {
-					sendStatus(mTestResultCode, mParentBundle);
+		                
+					} else if (parentLastChildNum == current) {
+						sendStatus(mTestResultCode, mParentBundle);
+					}
 				}
             }
         }
