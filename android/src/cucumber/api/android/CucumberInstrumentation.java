@@ -451,7 +451,7 @@ public class CucumberInstrumentation extends InstrumentationTestRunner {
 					continue;
 				}
 		
-				int indexOf = step.indexOf( "-" );
+				int indexOf = step.lastIndexOf( "-" );
 				String key = step.substring( 0, indexOf ).replace( "\t", "");
 				Double value = Double.valueOf( step.substring( indexOf + 1 ).replace( "\t", "" ).replace( "\n", "" ) );
 				map.put( key, value );
