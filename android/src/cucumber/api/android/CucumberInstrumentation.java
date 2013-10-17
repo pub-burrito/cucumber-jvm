@@ -446,9 +446,11 @@ public class CucumberInstrumentation extends InstrumentationTestRunner {
 			String[] steps = prettyString.split( "\n" );
 			for ( String step : steps )
 			{
-				if ( TextUtils.isEmpty( step ) || step.equals( "{" ) || step.equals( "}" ) ) continue;
-				
-				Log.d( "Cuke", String.format("Looking at - %s", step) );
+				if ( TextUtils.isEmpty( step ) || step.equals( "{" ) || step.equals( "}" ) ) 
+				{
+					continue;
+				}
+		
 				int indexOf = step.indexOf( "-" );
 				String key = step.substring( 0, indexOf ).replace( "\t", "");
 				Double value = Double.valueOf( step.substring( indexOf + 1 ).replace( "\t", "" ).replace( "\n", "" ) );
