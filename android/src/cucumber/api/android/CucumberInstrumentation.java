@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 import java.util.TreeMap;
@@ -400,7 +401,7 @@ public class CucumberInstrumentation extends InstrumentationTestRunner {
 				duration = ( Calendar.getInstance().getTimeInMillis() - stepTracker.getTimeInMillis() ) / 1000.0;
 			}
 			
-			LinkedHashMap<String, Double> steps = (LinkedHashMap<String, Double>) mTestResult.getSerializable( REPORT_KEY_STEPS );
+			LinkedHashMap<String, Double> steps = (LinkedHashMap<String, Double>) unFormat( mTestResult.getString( REPORT_KEY_STEPS ) );
 			
 			if ( steps == null )
 			{
@@ -416,9 +417,47 @@ public class CucumberInstrumentation extends InstrumentationTestRunner {
 			
 			steps.put( stepId, duration );
 			
-			mTestResult.putSerializable( REPORT_KEY_STEPS, steps );
+			mTestResult.putString( REPORT_KEY_STEPS, prettyFormat( steps ) );
 		}
 
+		private String prettyFormat( Map<String, Double> map )
+		{
+			StringBuilder builder = new StringBuilder("{\n");
+			
+			for ( String key : map.keySet() )
+			{
+				builder.append( String.format( "%s\t-\t%s\n", key, map.get( key ) ) );
+			}
+			
+			builder.append( "}" );
+			
+			return builder.toString();
+		}
+		
+		private Map<String, Double> unFormat(String prettyString)
+		{
+			LinkedHashMap<String, Double> map = new LinkedHashMap<String, Double>();
+			
+			if ( TextUtils.isEmpty( prettyString ) )
+			{
+				return map;
+			}
+			
+			String[] steps = prettyString.split( "\n" );
+			for ( String step : steps )
+			{
+				if ( TextUtils.isEmpty( step ) || step.equals( "{" ) || step.equals( "}" ) ) continue;
+				
+				Log.d( "Cuke", String.format("Looking at - %s", step) );
+				int indexOf = step.indexOf( "-" );
+				String key = step.substring( 0, indexOf ).replace( "\t", "");
+				Double value = Double.valueOf( step.substring( indexOf + 1 ).replace( "\t", "" ).replace( "\n", "" ) );
+				map.put( key, value );
+			}
+			
+			return map;
+		}
+		
 		protected String stepId()
 		{
 			return String.format("%s %s", mStep.getKeyword(), mStep.getName() );
