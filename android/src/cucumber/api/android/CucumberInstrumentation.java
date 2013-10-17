@@ -296,10 +296,13 @@ public class CucumberInstrumentation extends InstrumentationTestRunner {
         private final Bundle mResultTemplate;
         private Bundle mTestResult;
         private Bundle mParentBundle;
+        private Bundle mLastTestResult;
         private int mScenarioNum;
         private int mTestResultCode;
         private Feature mFeature;
         private Step mStep;
+        private String mUri;
+        private String mPackage;
 
         public AndroidReporter(int numTests) {
             mFormatter = new AndroidFormatter(TAG);
@@ -311,6 +314,7 @@ public class CucumberInstrumentation extends InstrumentationTestRunner {
         @Override
         public void uri(String uri) {
             mFormatter.uri(uri);
+            mUri = uri.substring( 0, uri.lastIndexOf( "." ) ).replaceAll( "/", "." );
         }
 
         @Override
@@ -401,8 +405,8 @@ public class CucumberInstrumentation extends InstrumentationTestRunner {
         }
 
         private void beginScenario(TagStatement scenario) {
-            String testClass = String.format("%s %s", mFeature.getKeyword(), mFeature.getName());
-            String testName = String.format("%s %s", scenario.getKeyword(), scenario.getName());
+            String testClass = String.format("%s: %s", mFeature.getKeyword(), mFeature.getName()).replaceAll( " - |_", ". " );
+            String testName = String.format("%s: %s", scenario.getKeyword(), scenario.getName());
 
             if(mParentBundle != null){
             	if(!scenario.getName().contains(mParentBundle.getString(REPORT_KEY_NAME_TEST).replace("Scenario Outline", "").trim()))
@@ -476,10 +480,12 @@ public class CucumberInstrumentation extends InstrumentationTestRunner {
         }
 
         private void reportLastResult() {
-            if (mScenarioNum != 0) {
+            if (mScenarioNum != 0 && mTestResult != mLastTestResult) {
                 if (mTestResultCode == 0) {
                     mTestResult.putString(Instrumentation.REPORT_KEY_STREAMRESULT, ".");
                 }
+                
+                mLastTestResult = mTestResult;
                 
                 String keyword = mTestResult.getString(REPORT_KEY_NAME_WORD);
                 //mTestResult.remove(REPORT_KEY_NAME_WORD);
