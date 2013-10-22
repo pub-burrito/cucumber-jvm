@@ -254,7 +254,7 @@ public class CucumberInstrumentation extends InstrumentationTestRunner {
                     for (CucumberExamples examples : ((CucumberScenarioOutline) statement).getCucumberExamplesList()) {
                     	numScenarios += examples.getExamples().getRows().size();
                     }
-                    //numScenarios--; // subtract table header
+                    numScenarios--; // subtract table header
                 }
             }
         }
@@ -290,6 +290,13 @@ public class CucumberInstrumentation extends InstrumentationTestRunner {
             Log.w(TAG, s);
         }
     }
+    
+    public void sendStatus(int resultCode, Bundle results)
+	{
+		//Log.v(TAG, "Status=" + resultCode + ", Bundle: " + results.getInt( "current" ));
+		
+		super.sendStatus( resultCode, results );
+	}
 
     /**
      * This class reports the current test-state back to the framework.
@@ -357,7 +364,7 @@ public class CucumberInstrumentation extends InstrumentationTestRunner {
             mFormatter.examples(examples);
             
             if (mParentBundle != null) {
-            	mParentBundle.putInt(REPORT_KEY_EXAMPLES, examples.getRows().size() - 1); //discounting header
+            	mParentBundle.putInt(REPORT_KEY_EXAMPLES, mParentBundle.getInt(REPORT_KEY_EXAMPLES, 0) + examples.getRows().size() - 1); //discounting header
             }
         }
 
@@ -389,7 +396,6 @@ public class CucumberInstrumentation extends InstrumentationTestRunner {
 
         protected Calendar stepTracker = Calendar.getInstance();
         
-		@SuppressWarnings( "unchecked" )
 		protected void trackStep(double duration)
 		{
 			if ( duration == 0) 
@@ -527,7 +533,7 @@ public class CucumberInstrumentation extends InstrumentationTestRunner {
             sendStatus(REPORT_VALUE_RESULT_START, mTestResult);
             mTestResultCode = 0;
         }
-
+        
 		protected String scenarioNameFromParent()
 		{
 			return mParentBundle.getString(REPORT_KEY_NAME_TEST).replace("Scenario Outline: ", "").trim();
@@ -608,11 +614,12 @@ public class CucumberInstrumentation extends InstrumentationTestRunner {
 				int parentNum = mParentBundle != null ? mParentBundle.getInt(REPORT_KEY_NUM_CURRENT) : -1;
 				int parentLastChildNum = mParentBundle != null ? parentNum + mParentBundle.getInt(REPORT_KEY_EXAMPLES) : -1;
 
-				
 				if (skip) 
 				{
 					mTestResult.putBoolean( "Skipped", true );
 				}
+				
+				//Log.v( TAG, "Result for " + current + " (parent: " + parentNum + ", lastChild: " + parentLastChildNum + "): " + mTestResultCode );
 				
 				if (isIndividualScenario || isOutlineScenario){
                 	sendStatus(mTestResultCode, mTestResult);
