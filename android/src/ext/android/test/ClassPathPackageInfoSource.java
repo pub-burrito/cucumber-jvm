@@ -16,11 +16,6 @@
 
 package ext.android.test;
 
-import android.util.Log;
-import dalvik.system.DexFile;
-import ext.com.google.android.collect.Maps;
-import ext.com.google.android.collect.Sets;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.Enumeration;
@@ -31,6 +26,11 @@ import java.util.regex.Pattern;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
+import android.util.Log;
+import dalvik.system.DexFile;
+import ext.com.google.android.collect.Maps;
+import ext.com.google.android.collect.Sets;
+
 /**
  * Generate {@link ClassPathPackageInfo}s by scanning apk paths.
  * <p/>
@@ -38,9 +38,10 @@ import java.util.zip.ZipFile;
  */
 public class ClassPathPackageInfoSource {
 
-    private static final String CLASS_EXTENSION = ".class";
-    private static final ClassLoader CLASS_LOADER
-            = ClassPathPackageInfoSource.class.getClassLoader();
+	private static final String TAG = "ClassPathPackageInfoSource";
+	private static final String CLASS_EXTENSION = ".class";
+    private static final ClassLoader CLASS_LOADER = ClassPathPackageInfoSource.class.getClassLoader();
+    
     private final SimpleCache<String, ClassPathPackageInfo> cache =
             new SimpleCache<String, ClassPathPackageInfo>() {
                 @Override
@@ -48,6 +49,26 @@ public class ClassPathPackageInfoSource {
                     return createPackageInfo(pkgName);
                 }
             };
+            
+    private final SimpleCache<String, DexFile> dexCache =
+            new SimpleCache<String, DexFile>() {
+                @Override
+                protected DexFile load(String apkPath) {
+                    try
+					{
+                    	Log.d( TAG, "Opening DEX file at: " + apkPath );
+                    	
+						return new DexFile(apkPath);
+					}
+					catch ( IOException e )
+					{
+						Log.w(TAG, "Error finding classes.dex at APK path: " + apkPath, e);
+						
+						throw new RuntimeException(e);
+					}
+                }
+            };
+            
     // The class path of the running application
     private final String[] classPath;
     private static String[] apkPaths;
@@ -68,10 +89,15 @@ public class ClassPathPackageInfoSource {
     }
 
     private ClassPathPackageInfo createPackageInfo(String packageName) {
+    	Log.d(TAG, "Creating PackageInfo for: " + packageName);
+    	
         Set<String> subpackageNames = new TreeSet<String>();
         Set<String> classNames = new TreeSet<String>();
         Set<Class<?>> topLevelClasses = Sets.newHashSet();
+        
+        //searchers for classes in APK/dex files
         findClasses(packageName, classNames, subpackageNames);
+        
         for (String className : classNames) {
             if (className.endsWith(".R") || className.endsWith(".Manifest")) {
                 // Don't try to load classes that are generated. They usually aren't in test apks.
@@ -80,16 +106,23 @@ public class ClassPathPackageInfoSource {
 
             try {
                 // We get errors in the emulator if we don't use the caller's class loader.
-                topLevelClasses.add(Class.forName(className, false,
-                        (classLoader != null) ? classLoader : CLASS_LOADER));
+            	
+            	Log.v( TAG, " - Loading: " + className );
+            	
+                topLevelClasses.add(
+                	Class.forName(className, false, (classLoader != null) ? classLoader : CLASS_LOADER)
+                );
             } catch (ClassNotFoundException e) {
                 // Should not happen unless there is a generated class that is not included in
                 // the .apk.
-                Log.w("ClassPathPackageInfoSource", "Cannot load class. "
+                Log.w(TAG, "Cannot load class. "
                         + "Make sure it is in your apk. Class name: '" + className
                         + "'. Message: " + e.getMessage(), e);
             }
         }
+        
+        Log.d( TAG, "- Loaded classes for [" + packageName + "]: " + topLevelClasses.size() + " - subpackages: " + subpackageNames.size() );
+        
         return new ClassPathPackageInfo(this, packageName, subpackageNames,
                 topLevelClasses);
     }
@@ -204,28 +237,34 @@ public class ClassPathPackageInfoSource {
 
         DexFile dexFile = null;
         try {
-            dexFile = new DexFile(apkPath);
+        	Log.v( TAG, "Searching for classes in [" + packageName + "]" );
+        	
+            dexFile = dexCache.get( apkPath );
+            
             Enumeration<String> apkClassNames = dexFile.entries();
+            
             while (apkClassNames.hasMoreElements()) {
                 String className = apkClassNames.nextElement();
 
-                if (className.startsWith(packageName)) {
+                //including only classes whose packages match exactly the one passed (ie: cucumber.api.java.en instead of cucumber.api.java.en_old also)
+                if ( className.startsWith(packageName + ( !packageName.endsWith( "." ) ? "." : "" ) ) ) {
+                	
                     String subPackageName = packageName;
                     int lastPackageSeparator = className.lastIndexOf('.');
+                    
                     if (lastPackageSeparator > 0) {
                         subPackageName = className.substring(0, lastPackageSeparator);
                     }
+                    
                     if (subPackageName.length() > packageName.length()) {
                         subpackageNames.add(subPackageName);
+                        
                     } else if (isToplevelClass(className)) {
+                    	Log.v( TAG, " - Found: " + className );
+                    	
                         classNames.add(className);
                     }
                 }
-            }
-        } catch (IOException e) {
-            if (false) {
-                Log.w("ClassPathPackageInfoSource",
-                        "Error finding classes at apk path: " + apkPath, e);
             }
         } finally {
             if (dexFile != null) {

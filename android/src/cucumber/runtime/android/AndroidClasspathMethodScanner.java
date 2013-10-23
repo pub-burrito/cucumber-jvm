@@ -1,5 +1,12 @@
 package cucumber.runtime.android;
 
+import java.lang.annotation.Annotation;
+import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Locale;
+
 import android.content.Context;
 import cucumber.api.java.After;
 import cucumber.api.java.Before;
@@ -7,12 +14,6 @@ import cucumber.runtime.CucumberException;
 import cucumber.runtime.Utils;
 import cucumber.runtime.java.StepDefAnnotation;
 import ext.android.test.ClassPathPackageInfoSource;
-
-import java.lang.annotation.Annotation;
-import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
 
 public class AndroidClasspathMethodScanner {
     private final Collection<Class<? extends Annotation>> mCucumberAnnotationClasses;
@@ -84,9 +85,13 @@ public class AndroidClasspathMethodScanner {
     @SuppressWarnings("unchecked")
     private Collection<Class<? extends Annotation>> findCucumberAnnotationClasses() {
         List<Class<? extends Annotation>> annotationClasses = new ArrayList<Class<? extends Annotation>>();
-        for (Class clazz : mSource.getPackageInfo("cucumber.api").getTopLevelClassesRecursive()) {
+        
+        String localizedPackage = String.format( "cucumber.api.java.%s", Locale.getDefault().getLanguage() );
+        
+		for (Class clazz : mSource.getPackageInfo(localizedPackage).getTopLevelClassesRecursive()) {
             if (clazz.isAnnotation()) annotationClasses.add(clazz);
         }
+		
         return annotationClasses;
     }
 

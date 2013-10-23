@@ -1,5 +1,7 @@
 package cucumber.api.android;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
@@ -20,6 +22,9 @@ import android.os.Looper;
 import android.test.InstrumentationTestRunner;
 import android.text.TextUtils;
 import android.util.Log;
+
+import com.apache.commons.codec.digest.DigestUtils;
+
 import cucumber.deps.difflib.StringUtills;
 import cucumber.runtime.Backend;
 import cucumber.runtime.Runtime;
@@ -28,6 +33,7 @@ import cucumber.runtime.android.AndroidBackend;
 import cucumber.runtime.android.AndroidClasspathMethodScanner;
 import cucumber.runtime.android.AndroidFormatter;
 import cucumber.runtime.android.AndroidResourceLoader;
+import cucumber.runtime.io.Resource;
 import cucumber.runtime.io.ResourceLoader;
 import cucumber.runtime.model.CucumberExamples;
 import cucumber.runtime.model.CucumberFeature;
@@ -73,6 +79,7 @@ public class CucumberInstrumentation extends InstrumentationTestRunner {
     private String mFilter;
     
     public static boolean skip = false;
+    protected final StringBuffer cmdLineArgs = new StringBuffer();
     
     private SharedPreferences preferences() {
     	return getContext().getSharedPreferences( getClass().getName(), Context.MODE_MULTI_PROCESS );
@@ -180,17 +187,16 @@ public class CucumberInstrumentation extends InstrumentationTestRunner {
         mTags = mTags != null ? mTags : defaultTags();
         
         //Command line arguments to runtime
-        StringBuffer cmdLineArgs = new StringBuffer();
-        
-        if (skip) {
-        	cmdLineArgs.append(" --dry-run ");
-        }
-        
         if (!TextUtils.isEmpty( mFilter )) {
         	cmdLineArgs.append(String.format(" --name %s ", mFilter.replaceAll(" ", "\\\\s")));
         } else {
 	        for (String tag : mTags) {
 	        	cmdLineArgs.append(String.format(" --tags %s ", tag.replaceAll(" ", "\\\\s")));
+	        	
+	        	if ( tag.startsWith( "@" ) ) //inclusive tag, filter features by it to save resources when loading/parsing files. 
+	        	{
+	        		mFeatures += String.format( "{%s}", tag );
+	        	}
 			}
         }
 	        
@@ -200,15 +206,87 @@ public class CucumberInstrumentation extends InstrumentationTestRunner {
         
         Log.i(TAG, "RuntimeOptions: " + properties);
         
-        mRuntimeOptions = new RuntimeOptions(properties);
+        mRuntimeOptions = new CachedRuntimeOptions( properties, skip ? "--dry-run" : null );
 
         mResourceLoader = new AndroidResourceLoader(context);
+        
         List<Backend> backends = new ArrayList<Backend>();
         backends.add(new AndroidBackend(this));
+        
         mRuntime = new Runtime(mResourceLoader, mClassLoader, backends, mRuntimeOptions);
 
     	super.onCreate(arguments);
         //start();
+    }
+    
+    private static class CachedRuntimeOptions extends RuntimeOptions
+    {
+    	private final Properties properties;
+    	
+    	public CachedRuntimeOptions(Properties properties, String... argv)
+    	{
+    		super( properties, nullArgs( argv ) ? new String[0] : argv );
+    		
+    		this.properties = properties;
+    	}
+
+		protected static boolean nullArgs( String... argv )
+		{
+			return argv == null || argv.length == 1 && argv[0] == null;
+		}
+    	
+    	//Implementing a local caching strategy based on MD5 hashes of properties/cmdLineArgs + .feature files in defined mFeatures path.
+    	@Override
+    	public List<CucumberFeature> cucumberFeatures( ResourceLoader resourceLoader )
+		{
+    		Log.d( TAG, "Parsing features..." );
+    		
+    		//String runtimeHash = md5( resourceLoader );
+    		
+    		//Log.d( TAG, "- Runtime Hash: " + runtimeHash );
+    		
+			List<CucumberFeature> cucumberFeatures = super.cucumberFeatures( resourceLoader );
+    		
+			return cucumberFeatures;
+		}
+    	
+    	public String md5( ResourceLoader resourceLoader )
+    	{
+    		List<String> hashes = new ArrayList<String>();
+    		
+    		hashes.add( md5( properties.toString() ) );
+    		
+    		for (String featurePath : featurePaths) {
+                Iterable<Resource> resources = resourceLoader.resources(featurePath, ".feature");
+                
+                for (Resource resource : resources) 
+                {
+                	try
+					{
+						hashes.add( md5( resource.getInputStream() ) );
+					}
+					catch ( IOException e )
+					{
+						throw new RuntimeException( e );
+					}
+                }
+            }
+    		
+    		return md5( hashes.toString() );
+    	}
+    	
+    	public String md5( String data )
+    	{
+    		return DigestUtils.md5Hex( data );
+    	}
+    	
+    	public String md5( InputStream stream ) throws IOException
+    	{
+    		final String md5Hex = DigestUtils.md5Hex( stream );
+    		stream.reset();
+    		stream.close();
+    		return md5Hex;
+    	}
     }
 
     /**
@@ -241,9 +319,24 @@ public class CucumberInstrumentation extends InstrumentationTestRunner {
 
     @Override
     public void onStart() {
+    	Log.i( TAG, "Starting..." );
+    	
     	Looper.prepare();
 
+    	/*
+    	try
+		{
+			Thread.sleep( 5000 );
+		}
+		catch ( InterruptedException e )
+		{
+			throw new RuntimeException( e );
+		}
+		*/
+    	
         List<CucumberFeature> cucumberFeatures = mRuntimeOptions.cucumberFeatures(mResourceLoader);
+        Log.i( TAG, "Total number of features: " + cucumberFeatures.size() );
+        
         int numScenarios = 0;
 
         for (CucumberFeature feature : cucumberFeatures) {
@@ -258,6 +351,8 @@ public class CucumberInstrumentation extends InstrumentationTestRunner {
                 }
             }
         }
+        
+        Log.i( TAG, "Total number of scenarios: " + numScenarios );
 
         AndroidReporter reporter = new AndroidReporter(numScenarios);
         mRuntimeOptions.formatters.clear();
@@ -265,7 +360,10 @@ public class CucumberInstrumentation extends InstrumentationTestRunner {
 
         for (CucumberFeature cucumberFeature : cucumberFeatures) {
             Formatter formatter = mRuntimeOptions.formatter(mClassLoader);
-            	cucumberFeature.run(formatter, reporter, mRuntime);
+            
+            Log.d( TAG, "- Running Tests for Feature: " + cucumberFeature.getGherkinFeature().getName() );
+            
+            cucumberFeature.run(formatter, reporter, mRuntime);
         }
         
         Formatter formatter = mRuntimeOptions.formatter(mClassLoader);
@@ -274,7 +372,14 @@ public class CucumberInstrumentation extends InstrumentationTestRunner {
         printSummary();
         formatter.close();
 
-        finish(Activity.RESULT_OK, new Bundle());
+        if (skip)
+        {
+        	finish(Activity.RESULT_CANCELED, new Bundle());
+        }
+        else
+        {
+        	finish(Activity.RESULT_OK, new Bundle());
+        }
     }
 
     private void printSummary() {
