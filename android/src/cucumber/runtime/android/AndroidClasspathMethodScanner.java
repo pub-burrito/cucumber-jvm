@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 
 import android.content.Context;
 import cucumber.api.java.After;
@@ -14,6 +15,7 @@ import cucumber.runtime.CucumberException;
 import cucumber.runtime.Utils;
 import cucumber.runtime.java.StepDefAnnotation;
 import ext.android.test.ClassPathPackageInfoSource;
+import ext.com.google.android.collect.Sets;
 
 public class AndroidClasspathMethodScanner {
     private final Collection<Class<? extends Annotation>> mCucumberAnnotationClasses;
@@ -86,12 +88,20 @@ public class AndroidClasspathMethodScanner {
     private Collection<Class<? extends Annotation>> findCucumberAnnotationClasses() {
         List<Class<? extends Annotation>> annotationClasses = new ArrayList<Class<? extends Annotation>>();
         
-        String localizedPackage = String.format( "cucumber.api.java.%s", Locale.getDefault().getLanguage() );
+        String topLevelPackage = "cucumber.api.java";
+        String localizedPackage = String.format( "%s.%s", topLevelPackage, Locale.getDefault().getLanguage() );
         
-		for (Class clazz : mSource.getPackageInfo(localizedPackage).getTopLevelClassesRecursive()) {
-            if (clazz.isAnnotation()) annotationClasses.add(clazz);
+        Set<Class<?>> classes = Sets.newHashSet();
+        classes.addAll( mSource.getPackageInfo(topLevelPackage).getTopLevelClasses() );
+        classes.addAll( mSource.getPackageInfo(localizedPackage).getTopLevelClassesRecursive() );
+        
+        for (Class<?> clazz : classes) {
+        	if ( clazz.isAnnotation() ) 
+        	{
+        		annotationClasses.add( (Class<? extends Annotation>) clazz );
+        	}
         }
-		
+        
         return annotationClasses;
     }
 

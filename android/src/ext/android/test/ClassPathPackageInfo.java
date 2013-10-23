@@ -50,12 +50,18 @@ public class ClassPathPackageInfo {
         return info;
     }
 
+    public Set<Class<?>> getTopLevelClasses() {
+        Set<Class<?>> set = Sets.newHashSet();
+        set.addAll(topLevelClasses);
+        return set;
+    }
+
     public Set<Class<?>> getTopLevelClassesRecursive() {
         Set<Class<?>> set = Sets.newHashSet();
         addTopLevelClassesTo(set);
         return set;
     }
-
+    
     private void addTopLevelClassesTo(Set<Class<?>> set) {
         set.addAll(topLevelClasses);
         for (ClassPathPackageInfo info : getSubpackages()) {
