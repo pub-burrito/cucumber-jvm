@@ -138,8 +138,7 @@
                 <artifactId>android-maven-plugin</artifactId>
                 <configuration>
                     <sdk>
-                        <!-- api level 8 = platform 2.2.1 -->
-                        <platform>16</platform>
+                        <platform>17</platform>
                     </sdk>
                 </configuration>
                 <executions>
