@@ -346,8 +346,8 @@ public class CucumberInstrumentation extends InstrumentationTestRunner {
                 } else if (statement instanceof CucumberScenarioOutline) {
                     for (CucumberExamples examples : ((CucumberScenarioOutline) statement).getCucumberExamplesList()) {
                     	numScenarios += examples.getExamples().getRows().size();
+                    	//numScenarios--; // subtract table header
                     }
-                    numScenarios--; // subtract table header
                 }
             }
         }
