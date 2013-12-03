@@ -68,11 +68,11 @@
     <distributionManagement>
      <repository>
         <id>cloud.archiva.internal</id>
-        <url>http://cloud.local:8180/archiva/repository/internal/</url>
+        <url>http://archiva.cliff.cloudburrito.com:8080/archiva/repository/internal/</url>
      </repository>
      <snapshotRepository>
         <id>cloud.archiva.snapshots</id>
-        <url>http://cloud.local:8180/archiva/repository/snapshots/</url>
+        <url>http://archiva.cliff.cloudburrito.com:8080/archiva/repository/snapshots/</url>
      </snapshotRepository>
     </distributionManagement>
 
