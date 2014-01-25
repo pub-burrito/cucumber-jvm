@@ -500,9 +500,18 @@ public class CucumberInstrumentation extends InstrumentationTestRunner {
 		}
 
         protected Calendar stepTracker = Calendar.getInstance();
+        protected double lastDuration = -1;
         
-		protected void trackStep(double duration)
+		protected void trackStep( double duration )
 		{
+			if ( duration == lastDuration )
+			{
+				//already tracked it
+				return;
+			}
+			
+			lastDuration = duration;
+			
 			if ( duration == 0) 
 			{
 				stepTracker = Calendar.getInstance();
@@ -512,7 +521,7 @@ public class CucumberInstrumentation extends InstrumentationTestRunner {
 				duration = ( Calendar.getInstance().getTimeInMillis() - stepTracker.getTimeInMillis() ) / 1000.0;
 			}
 			
-			LinkedHashMap<String, Double> steps = (LinkedHashMap<String, Double>) unFormat( mTestResult.getString( REPORT_KEY_STEPS ) );
+			Map<String, Double> steps = unFormat( mTestResult.getString( REPORT_KEY_STEPS ) );
 			
 			if ( steps == null )
 			{
@@ -535,9 +544,18 @@ public class CucumberInstrumentation extends InstrumentationTestRunner {
 		{
 			StringBuilder builder = new StringBuilder("{\n");
 			
+			int maxKeyLength = 0;
+			
 			for ( String key : map.keySet() )
 			{
-				builder.append( String.format( "%s\t-\t%s\n", key, map.get( key ) ) );
+				maxKeyLength = Math.max( maxKeyLength, key.length() );
+			}
+			
+			for ( String key : map.keySet() )
+			{
+				String blanks = new String(new char[ maxKeyLength - key.length() ]).replace( "\0",  " " );
+				
+				builder.append( String.format( "%s%s : %s\n", key, blanks, map.get( key ) ) );
 			}
 			
 			builder.append( "}" );
@@ -562,9 +580,10 @@ public class CucumberInstrumentation extends InstrumentationTestRunner {
 					continue;
 				}
 		
-				int indexOf = step.lastIndexOf( "-" );
-				String key = step.substring( 0, indexOf ).replace( "\t", "");
-				Double value = Double.valueOf( step.substring( indexOf + 1 ).replace( "\t", "" ).replace( "\n", "" ) );
+				int indexOf = step.lastIndexOf( ":" );
+				String key = step.substring( 0, indexOf ).trim();
+				Double value = Double.valueOf( step.substring( indexOf + 1 ).replace( "\n", "" ).trim() );
+				
 				map.put( key, value );
 			}
 			
