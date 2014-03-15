@@ -1,7 +1,5 @@
 package cucumber.api.android;
 
-import java.io.IOException;
-import java.io.InputStream;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
@@ -13,18 +11,17 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.TreeMap;
 
+import android.annotation.TargetApi;
 import android.app.Activity;
 import android.app.Instrumentation;
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Looper;
 import android.test.InstrumentationTestRunner;
 import android.text.TextUtils;
 import android.util.Log;
-
-import com.apache.commons.codec.digest.DigestUtils;
-
 import cucumber.deps.difflib.StringUtills;
 import cucumber.runtime.Backend;
 import cucumber.runtime.Runtime;
@@ -33,7 +30,6 @@ import cucumber.runtime.android.AndroidBackend;
 import cucumber.runtime.android.AndroidClasspathMethodScanner;
 import cucumber.runtime.android.AndroidFormatter;
 import cucumber.runtime.android.AndroidResourceLoader;
-import cucumber.runtime.io.Resource;
 import cucumber.runtime.io.ResourceLoader;
 import cucumber.runtime.model.CucumberExamples;
 import cucumber.runtime.model.CucumberFeature;
@@ -81,7 +77,8 @@ public class CucumberInstrumentation extends InstrumentationTestRunner {
     public static boolean skip = false;
     protected final StringBuffer cmdLineArgs = new StringBuffer();
     
-    private SharedPreferences preferences() {
+    @TargetApi( Build.VERSION_CODES.HONEYCOMB )
+	private SharedPreferences preferences() {
     	return getContext().getSharedPreferences( getClass().getName(), Context.MODE_MULTI_PROCESS );
 
     }
@@ -221,7 +218,8 @@ public class CucumberInstrumentation extends InstrumentationTestRunner {
     
     private static class CachedRuntimeOptions extends RuntimeOptions
     {
-    	private final Properties properties;
+    	@SuppressWarnings( "unused" )
+		private final Properties properties;
     	
     	public CachedRuntimeOptions(Properties properties, String... argv)
     	{
@@ -250,6 +248,7 @@ public class CucumberInstrumentation extends InstrumentationTestRunner {
 			return cucumberFeatures;
 		}
     	
+    	/*
     	public String md5( ResourceLoader resourceLoader )
     	{
     		List<String> hashes = new ArrayList<String>();
@@ -287,6 +286,7 @@ public class CucumberInstrumentation extends InstrumentationTestRunner {
     		stream.close();
     		return md5Hex;
     	}
+    	*/
     }
 
     /**
@@ -363,7 +363,16 @@ public class CucumberInstrumentation extends InstrumentationTestRunner {
             
             Log.d( TAG, "- Running Tests for Feature: " + cucumberFeature.getGherkinFeature().getName() );
             
-            cucumberFeature.run(formatter, reporter, mRuntime);
+            try
+            {
+            	cucumberFeature.run(formatter, reporter, mRuntime);
+            } 
+            catch (Throwable t)
+            {
+            	reporter.result( new Result( Result.FAILED, 0L, t, null ) );
+            	
+            	throw new RuntimeException( t );
+            }
         }
         
         Formatter formatter = mRuntimeOptions.formatter(mClassLoader);
@@ -407,6 +416,7 @@ public class CucumberInstrumentation extends InstrumentationTestRunner {
      * This class reports the current test-state back to the framework.
      * It also wraps the AndroidFormatter to intercept important callbacks.
      */
+    @SuppressWarnings( "unused" )
     private class AndroidReporter implements Formatter, Reporter {
         private final AndroidFormatter mFormatter;
         private final Bundle mResultTemplate;
@@ -418,7 +428,7 @@ public class CucumberInstrumentation extends InstrumentationTestRunner {
         private Feature mFeature;
         private Step mStep;
         private String mUri;
-        private String mPackage;
+		private String mPackage;
 
         public AndroidReporter(int numTests) {
             mFormatter = new AndroidFormatter(TAG);
@@ -667,7 +677,6 @@ public class CucumberInstrumentation extends InstrumentationTestRunner {
         
         @Override
         public void result(Result result) {
-        	
         	/*
         	 * Reporting errors or missing step definitions
         	 */
