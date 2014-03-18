@@ -4,10 +4,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
-import org.apache.commons.io.IOUtils;
 
 import android.content.Context;
 import android.content.res.AssetManager;
@@ -19,8 +15,6 @@ import cucumber.runtime.io.ResourceLoader;
 public class AndroidResourceLoader implements ResourceLoader
 {
 	private static final String TAG = "AndroidResourceLoader";
-	
-	private static final Pattern PREDICATED_PATH = Pattern.compile( "(.*)\\[(.*)\\](?:\\{(.*)\\})?" );
 	
 	private Context mContext;
 	
@@ -75,13 +69,6 @@ public class AndroidResourceLoader implements ResourceLoader
 			List<String> list = new ArrayList<String>();
 			boolean listIncludesPath = false;
 			
-			Matcher predicateMatcher = PREDICATED_PATH.matcher( path );
-			boolean hasPredicate = predicateMatcher.matches();
-			
-			path = hasPredicate ? predicateMatcher.group( 1 ) : path;
-			String namePredicate = hasPredicate ? predicateMatcher.group( 2 ) : null;
-			String contentPredicate = hasPredicate ? predicateMatcher.group( 3 ) : null;
-			
 			if ( assetIndex.size() > 0 )
 			{
 				list = assetIndex.list( path );
@@ -99,23 +86,11 @@ public class AndroidResourceLoader implements ResourceLoader
 				String fullName = listIncludesPath ? name : String.format( "%s/%s", path, name );
 				boolean hasExtension = fullName.substring( fullName.lastIndexOf( "/" ) ).contains( "." );
 				
-				Resource as = new AndroidResource( mContext, fullName );
+				Resource resource = new AndroidResource( mContext, fullName );
 				
-				if ( 
-					name.endsWith( suffix ) && 
-					( 
-						!hasPredicate 
-						|| 
-						fullName.matches( namePredicate ) && 
-						(
-							contentPredicate == null 
-							|| 
-							IOUtils.toString( as.getInputStream() ).contains( contentPredicate )
-						) 
-					) 
-				)
+				if ( name.endsWith( suffix ) )
 				{
-					res.add( as );
+					res.add( resource );
 				}
 				else if ( !hasExtension )
 				{

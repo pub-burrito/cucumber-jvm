@@ -1,12 +1,12 @@
 package cucumber.runtime.junit;
 
-import cucumber.api.junit.Cucumber;
-import cucumber.runtime.RuntimeOptions;
-import cucumber.runtime.io.MultiLoader;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+
+import cucumber.api.junit.Cucumber;
+import cucumber.runtime.RuntimeOptions;
+import cucumber.runtime.io.MultiLoader;
 
 public class RuntimeOptionsFactory {
     private final Class clazz;

@@ -1,10 +1,5 @@
 package cucumber.runtime.model;
 
-import cucumber.runtime.CucumberException;
-import cucumber.runtime.FeatureBuilder;
-import cucumber.runtime.Runtime;
-import cucumber.runtime.io.Resource;
-import cucumber.runtime.io.ResourceLoader;
 import gherkin.I18n;
 import gherkin.formatter.Formatter;
 import gherkin.formatter.Reporter;
@@ -18,7 +13,16 @@ import gherkin.formatter.model.Step;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+
+import cucumber.runtime.CucumberException;
+import cucumber.runtime.FeatureBuilder;
+import cucumber.runtime.PathWithPredicates.PathPredicateFilter;
+import cucumber.runtime.Runtime;
+import cucumber.runtime.io.Resource;
+import cucumber.runtime.io.ResourceLoader;
 
 public class CucumberFeature {
     private final String uri;
@@ -32,23 +36,56 @@ public class CucumberFeature {
     public static List<CucumberFeature> load(ResourceLoader resourceLoader, List<String> featurePaths, final List<Object> filters) {    	
     	final List<CucumberFeature> cucumberFeatures = new ArrayList<CucumberFeature>();
         final FeatureBuilder builder = new FeatureBuilder(cucumberFeatures);
-        boolean resourceFound = false;
-        for (String featurePath : featurePaths) {
-            Iterable<Resource> resources = resourceLoader.resources(featurePath, ".feature");
-            for (Resource resource : resources) {
-                resourceFound = true;
-                builder.parse(resource, filters);
-            }
+        
+        List<Object> otherFilters = new ArrayList<Object>();
+        
+        Map<String, PathPredicateFilter> pathFilters = new LinkedHashMap<String, PathPredicateFilter>();
+        for ( Object filter : filters )
+		{
+			if ( filter instanceof PathPredicateFilter )
+			{
+				PathPredicateFilter pathFilter = (PathPredicateFilter) filter;
+				pathFilters.put( pathFilter.getOriginalPath(), pathFilter );
+			}
+			else
+			{
+				otherFilters.add( filter );
+			}
+		}
+        
+        try
+        {
+	        boolean resourceFound = false;
+	        for (String featurePath : featurePaths) 
+	        {
+	        	PathPredicateFilter pathFilter = pathFilters.get( featurePath );
+	        	
+	            String rootPath = pathFilter != null ? pathFilter.getPath() : featurePath;
+	            
+				Iterable<Resource> resources = resourceLoader.resources( rootPath, ".feature");
+				
+	            for (Resource resource : resources) {
+	            	if ( pathFilter == null || pathFilter.matches( resource ) )
+	            	{
+		                resourceFound = true;
+		                builder.parse(resource, otherFilters);
+	            	}
+	            }
+	        }
+	        if (cucumberFeatures.isEmpty()) {
+	            if (resourceFound) {
+	                throw new CucumberException(String.format("None of the features at %s matched the filters: %s", featurePaths, filters));
+	            } else {
+	                throw new CucumberException(String.format("No features found at %s", featurePaths));
+	            }
+	        }
+	        Collections.sort(cucumberFeatures, new CucumberFeatureUriComparator());
+	        return cucumberFeatures;
         }
-        if (cucumberFeatures.isEmpty()) {
-            if (resourceFound) {
-                throw new CucumberException(String.format("None of the features at %s matched the filters: %s", featurePaths, filters));
-            } else {
-                throw new CucumberException(String.format("No features found at %s", featurePaths));
-            }
+        finally
+        {
+        	if ( builder != null) builder.close();
         }
-        Collections.sort(cucumberFeatures, new CucumberFeatureUriComparator());
-        return cucumberFeatures;
     }
 
 

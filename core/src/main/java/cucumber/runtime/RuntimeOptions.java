@@ -1,9 +1,7 @@
 package cucumber.runtime;
 
-import cucumber.runtime.formatter.ColorAware;
-import cucumber.runtime.formatter.FormatterFactory;
-import cucumber.runtime.io.ResourceLoader;
-import cucumber.runtime.model.CucumberFeature;
+import static cucumber.runtime.model.CucumberFeature.load;
+import static java.util.Arrays.asList;
 import gherkin.formatter.Formatter;
 import gherkin.formatter.Reporter;
 import gherkin.util.FixJava;
@@ -19,8 +17,10 @@ import java.util.ResourceBundle;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static cucumber.runtime.model.CucumberFeature.load;
-import static java.util.Arrays.asList;
+import cucumber.runtime.formatter.ColorAware;
+import cucumber.runtime.formatter.FormatterFactory;
+import cucumber.runtime.io.ResourceLoader;
+import cucumber.runtime.model.CucumberFeature;
 
 public class RuntimeOptions {
     public static final String VERSION = ResourceBundle.getBundle("cucumber.version").getString("cucumber-jvm.version");
@@ -104,11 +104,27 @@ public class RuntimeOptions {
                 printUsage();
                 throw new CucumberException("Unknown option: " + arg);
             } else {
-                PathWithLines pathWithLines = new PathWithLines(arg);
+
+            	//add feature files paths and line range filters
+                PathWithLines pathWithLines = new PathWithLines( arg );
+                
                 featurePaths.add(pathWithLines.path);
+                
                 parsedFilters.addAll(pathWithLines.lines);
+                
+                //add predicated path filter
+                PathWithPredicates pathWithFilters = new PathWithPredicates( arg );
+                
+                if ( pathWithFilters.hasPredicate() )
+                {
+                	parsedFilters.add( pathWithFilters.filter() );
+                }
             }
         }
+        
+        System.out.println("Paths: " + featurePaths);
+        System.out.println("Filters: " + parsedFilters);
+        
         if (!parsedFilters.isEmpty()) {
             filters.clear();
             filters.addAll(parsedFilters);
