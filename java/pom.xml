@@ -75,7 +75,7 @@ def normalize(s) {
   if(System.getProperty("java.version").startsWith("1.6")) {
     return s
   } else {
-    return java.text.Normalizer.normalize(s, java.text.Normalizer.Form.NFD)
+    return java.text.Normalizer.normalize(s, java.text.Normalizer.Form.NFC)
   }
 }
 
