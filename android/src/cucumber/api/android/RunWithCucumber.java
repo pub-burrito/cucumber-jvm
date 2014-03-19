@@ -10,9 +10,9 @@ import java.lang.annotation.Target;
 public @interface RunWithCucumber {
 	/**
 	 * 
-	 * @return default is " "
+	 * @return default is ""
 	 */
-    String glue() default "";
+    String[] glue() default "";
 
     /**
      * Set the path to the feature files that you want to run. Path must be relative to the assets folder

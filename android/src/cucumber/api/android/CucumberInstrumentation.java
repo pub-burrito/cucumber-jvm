@@ -69,7 +69,7 @@ public class CucumberInstrumentation extends InstrumentationTestRunner {
     private ResourceLoader mResourceLoader;
     private ClassLoader mClassLoader;
     private Runtime mRuntime;
-    private String mPackageOfTests;
+    private String[] mPackagesOfTests;
     private String mFeatures;
     private String[] mTags;
     private String mFilter;
@@ -131,7 +131,7 @@ public class CucumberInstrumentation extends InstrumentationTestRunner {
         	
             String testClass = arguments.getString(ARGUMENT_TEST_CLASS);
             testClass = testClass != null ? testClass : "null";
-            mPackageOfTests = arguments.getString(ARGUMENT_TEST_PACKAGE);
+            mPackagesOfTests = new String[] { arguments.getString(ARGUMENT_TEST_PACKAGE) };
 
             if (testClass.indexOf("#") != -1) { //executing a particular method/feature
             	String method = testClass.substring(testClass.indexOf("#") + 1);
@@ -149,8 +149,8 @@ public class CucumberInstrumentation extends InstrumentationTestRunner {
                     SEARCH_ANNOTATION:
                     for (Method m : clazz.getMethods()) {
                         for (Annotation a : m.getAnnotations()) {
-                            if (a.annotationType().getName().startsWith("cucumber") && mPackageOfTests == null) {
-                                mPackageOfTests = testClass.substring(0, testClass.lastIndexOf("."));
+                            if (a.annotationType().getName().startsWith("cucumber") && mPackagesOfTests == null) {
+                                mPackagesOfTests = new String[] { testClass.substring(0, testClass.lastIndexOf(".")) };
                                 break SEARCH_ANNOTATION;
                             }
                         }
@@ -179,7 +179,7 @@ public class CucumberInstrumentation extends InstrumentationTestRunner {
         }
 
         Properties properties = new Properties();
-        mPackageOfTests = mPackageOfTests != null ? mPackageOfTests : defaultGlue();
+        mPackagesOfTests = mPackagesOfTests != null ? mPackagesOfTests : new String[] { defaultGlue() };
         mFeatures = mFeatures != null ? mFeatures : defaultFeatures();
         mTags = mTags != null ? mTags : defaultTags();
         
@@ -196,8 +196,12 @@ public class CucumberInstrumentation extends InstrumentationTestRunner {
 	        	}
 			}
         }
-	        
-        cmdLineArgs.append(String.format(" --glue %s %s ", mPackageOfTests, mFeatures));
+	     
+        for (String pkg : mPackagesOfTests) {
+        	cmdLineArgs.append(String.format(" --glue %s ", pkg));
+		}
+        
+        cmdLineArgs.append(String.format(" %s ", mFeatures));
         
         properties.setProperty("cucumber.options", cmdLineArgs.toString());
         
@@ -296,7 +300,7 @@ public class CucumberInstrumentation extends InstrumentationTestRunner {
         RunWithCucumber annotation = clazz.getAnnotation(RunWithCucumber.class);
         if (annotation != null) {
             // isEmpty() only available in Android API 9+
-            mPackageOfTests = annotation.glue().equals("") ? defaultGlue() : annotation.glue();
+            mPackagesOfTests = annotation.glue().length == 0 || annotation.glue()[0].equals("") ? new String[] { defaultGlue() } : annotation.glue();
             mFeatures = annotation.features().equals("") ? defaultFeatures() : annotation.features() + (mFeatures != null ? "/" + mFeatures : "");
             mTags = annotation.tags().equals("") ? defaultTags() : annotation.tags().split( "\\s*&\\s*" );
             mFilter = annotation.filter();
@@ -369,7 +373,11 @@ public class CucumberInstrumentation extends InstrumentationTestRunner {
             } 
             catch (Throwable t)
             {
+            	//FIXME: Report errors/failure when exception happens during hook execution (either on first pass - dry run - or during test execution)
             	reporter.result( new Result( Result.FAILED, 0L, t, null ) );
+            	reporter.eof();
+            	
+            	//sendStatus( InstrumentationTestRunner.REPORT_VALUE_RESULT_ERROR, new Bundle() );
             	
             	throw new RuntimeException( t );
             }
