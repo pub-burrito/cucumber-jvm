@@ -697,8 +697,8 @@ public class CucumberInstrumentation extends InstrumentationTestRunner {
                 // There was a missing step definition, report an error.
                 List<String> snippets = mRuntime.getSnippets();
                 
-                Log.i( TAG, String.format( "Current Snippers: %s", snippets ) );
-                Log.i( TAG, String.format( "Last Snippers: %s", lastSnippets ) );
+                //Log.i( TAG, String.format( "Current Snippets: %s", snippets ) );
+                //Log.i( TAG, String.format( "Last Snippets: %s", lastSnippets ) );
                 
                 if (lastSnippets != null) 
                 {
@@ -715,7 +715,7 @@ public class CucumberInstrumentation extends InstrumentationTestRunner {
                 
                 lastSnippets = new ArrayList<String>( snippets );
                 
-                Log.i( TAG, String.format( "New Snippers: %s", lastSnippets ) );
+                //Log.i( TAG, String.format( "New Snippets: %s", lastSnippets ) );
                 
                 String report = 
                 	String.format(
