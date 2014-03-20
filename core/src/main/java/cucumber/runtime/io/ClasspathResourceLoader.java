@@ -27,9 +27,15 @@ public class ClasspathResourceLoader implements ResourceLoader {
 
     public <T> Collection<Class<? extends T>> getDescendants(Class<T> parentType, String packageName) {
         String packagePath = packageName.replace('.', '/').replace(File.separatorChar, '/');
+        
+        System.out.println("Looking up descendants of: " + parentType + " in: " + packageName);
+        
         Collection<Class<? extends T>> result = new HashSet<Class<? extends T>>();
         for (Resource classResource : resources(packagePath, ".class")) {
             String className = classResource.getClassName();
+            
+            System.out.println("- " + className);
+            
             Class<?> clazz = loadClass(className, classLoader);
             if (clazz != null && !parentType.equals(clazz) && parentType.isAssignableFrom(clazz)) {
                 result.add(clazz.asSubclass(parentType));
