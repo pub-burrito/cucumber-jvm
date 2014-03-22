@@ -216,8 +216,8 @@ public class CucumberInstrumentation extends InstrumentationTestRunner {
         
         mRuntime = new Runtime(mResourceLoader, mClassLoader, backends, mRuntimeOptions);
 
-    	super.onCreate(arguments);
-        //start();
+    	//super.onCreate(arguments);
+        start();
     }
     
     private static class CachedRuntimeOptions extends RuntimeOptions
