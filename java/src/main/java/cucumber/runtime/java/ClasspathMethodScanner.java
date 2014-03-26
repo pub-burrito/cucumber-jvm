@@ -1,17 +1,17 @@
 package cucumber.runtime.java;
 
-import cucumber.api.java.After;
-import cucumber.api.java.Before;
-import cucumber.runtime.CucumberException;
-import cucumber.runtime.Utils;
-import cucumber.runtime.io.ClasspathResourceLoader;
+import static cucumber.runtime.io.MultiLoader.packageName;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.util.Collection;
 import java.util.List;
 
-import static cucumber.runtime.io.MultiLoader.packageName;
+import cucumber.api.java.After;
+import cucumber.api.java.Before;
+import cucumber.runtime.CucumberException;
+import cucumber.runtime.Utils;
+import cucumber.runtime.io.ClasspathResourceLoader;
 
 class ClasspathMethodScanner {
 
@@ -32,11 +32,14 @@ class ClasspathMethodScanner {
     public void scan(JavaBackend javaBackend, List<String> gluePaths) {
         for (String gluePath : gluePaths) {
             for (Class<?> glueCodeClass : resourceLoader.getDescendants(Object.class, packageName(gluePath))) {
+            	Class<?> originalGlueCodeClass = glueCodeClass;
+            	
                 while (glueCodeClass != null && glueCodeClass != Object.class && !Utils.isInstantiable(glueCodeClass)) {
                     // those can't be instantiated without container class present.
                     glueCodeClass = glueCodeClass.getSuperclass();
                 }
-                if (glueCodeClass != null) {
+                
+                if (glueCodeClass != null && glueCodeClass != Object.class && Utils.isInstantiable(originalGlueCodeClass) && Utils.isInstantiable(glueCodeClass)) {
                     for (Method method : glueCodeClass.getMethods()) {
                         scan(javaBackend, method, glueCodeClass);
                     }
