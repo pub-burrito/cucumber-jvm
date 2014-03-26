@@ -1,27 +1,27 @@
 package cucumber.runtime.java;
 
-import cucumber.api.Scenario;
-import cucumber.runtime.CucumberException;
-import cucumber.runtime.HookDefinition;
-import cucumber.runtime.MethodFormat;
-import cucumber.runtime.Utils;
+import static java.util.Arrays.asList;
 import gherkin.TagExpression;
 import gherkin.formatter.model.Tag;
 
 import java.lang.reflect.Method;
 import java.util.Collection;
 
-import static java.util.Arrays.asList;
+import cucumber.api.Scenario;
+import cucumber.runtime.CucumberException;
+import cucumber.runtime.HookDefinition;
+import cucumber.runtime.MethodFormat;
+import cucumber.runtime.Utils;
 
 class JavaHookDefinition implements HookDefinition {
 
     private final Method method;
-    private final int timeout;
+    private final long timeout;
     private final TagExpression tagExpression;
     private final int order;
     private final ObjectFactory objectFactory;
 
-    public JavaHookDefinition(Method method, String[] tagExpressions, int order, int timeout, ObjectFactory objectFactory) {
+    public JavaHookDefinition(Method method, String[] tagExpressions, int order, long timeout, ObjectFactory objectFactory) {
         this.method = method;
         this.timeout = timeout;
         tagExpression = new TagExpression(asList(tagExpressions));

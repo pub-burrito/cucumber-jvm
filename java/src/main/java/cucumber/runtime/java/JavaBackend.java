@@ -1,5 +1,12 @@
 package cucumber.runtime.java;
 
+import gherkin.formatter.model.Step;
+
+import java.lang.annotation.Annotation;
+import java.lang.reflect.Method;
+import java.util.List;
+import java.util.regex.Pattern;
+
 import cucumber.api.java.After;
 import cucumber.api.java.Before;
 import cucumber.runtime.Backend;
@@ -11,12 +18,6 @@ import cucumber.runtime.Utils;
 import cucumber.runtime.io.ClasspathResourceLoader;
 import cucumber.runtime.io.ResourceLoader;
 import cucumber.runtime.snippets.SnippetGenerator;
-import gherkin.formatter.model.Step;
-
-import java.lang.annotation.Annotation;
-import java.lang.reflect.Method;
-import java.util.List;
-import java.util.regex.Pattern;
 
 public class JavaBackend implements Backend {
     private final SnippetGenerator snippetGenerator = new SnippetGenerator(new JavaSnippet());
@@ -103,9 +104,9 @@ public class JavaBackend implements Backend {
         return Pattern.compile(regexpString);
     }
 
-    private int timeout(Annotation annotation) throws Throwable {
+    private long timeout(Annotation annotation) throws Throwable {
         Method regexpMethod = annotation.getClass().getMethod("timeout");
-        return (Integer) Utils.invoke(annotation, regexpMethod, 0);
+        return (Long) Utils.invoke(annotation, regexpMethod, 0);
     }
 
     void addHook(Annotation annotation, Method method) {
@@ -113,11 +114,11 @@ public class JavaBackend implements Backend {
 
         if (annotation.annotationType().equals(Before.class)) {
             String[] tagExpressions = ((Before) annotation).value();
-            int timeout = ((Before) annotation).timeout();
+            long timeout = ((Before) annotation).timeout();
             glue.addBeforeHook(new JavaHookDefinition(method, tagExpressions, ((Before) annotation).order(), timeout, objectFactory));
         } else {
             String[] tagExpressions = ((After) annotation).value();
-            int timeout = ((After) annotation).timeout();
+            long timeout = ((After) annotation).timeout();
             glue.addAfterHook(new JavaHookDefinition(method, tagExpressions, ((After) annotation).order(), timeout, objectFactory));
         }
     }

@@ -1,10 +1,5 @@
 package cucumber.runtime.java;
 
-import cucumber.runtime.JdkPatternArgumentMatcher;
-import cucumber.runtime.MethodFormat;
-import cucumber.runtime.ParameterInfo;
-import cucumber.runtime.StepDefinition;
-import cucumber.runtime.Utils;
 import gherkin.I18n;
 import gherkin.formatter.Argument;
 import gherkin.formatter.model.Step;
@@ -14,15 +9,21 @@ import java.lang.reflect.Type;
 import java.util.List;
 import java.util.regex.Pattern;
 
+import cucumber.runtime.JdkPatternArgumentMatcher;
+import cucumber.runtime.MethodFormat;
+import cucumber.runtime.ParameterInfo;
+import cucumber.runtime.StepDefinition;
+import cucumber.runtime.Utils;
+
 class JavaStepDefinition implements StepDefinition {
     private final Method method;
     private final Pattern pattern;
-    private final int timeout;
+    private final long timeout;
     private final JdkPatternArgumentMatcher argumentMatcher;
     private final ObjectFactory objectFactory;
     private List<ParameterInfo> parameterInfos;
 
-    public JavaStepDefinition(Method method, Pattern pattern, int timeout, ObjectFactory objectFactory) {
+    public JavaStepDefinition(Method method, Pattern pattern, long timeout, ObjectFactory objectFactory) {
         this.method = method;
         this.parameterInfos = ParameterInfo.fromMethod(method);
         this.pattern = pattern;
