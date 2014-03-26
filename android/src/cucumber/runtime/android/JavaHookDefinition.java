@@ -18,12 +18,12 @@ import cucumber.runtime.java.ObjectFactory;
 class JavaHookDefinition implements HookDefinition {
 
     private final Method method;
-    private final long timeout;
+    private final int timeout;
     private final TagExpression tagExpression;
     private final int order;
     private final ObjectFactory objectFactory;
 
-    public JavaHookDefinition(Method method, String[] tagExpressions, int order, long timeout, ObjectFactory objectFactory) {
+    public JavaHookDefinition(Method method, String[] tagExpressions, int order, int timeout, ObjectFactory objectFactory) {
         this.method = method;
         this.timeout = timeout;
         tagExpression = new TagExpression(asList(tagExpressions));

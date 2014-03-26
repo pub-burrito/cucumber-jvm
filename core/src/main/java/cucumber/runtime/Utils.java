@@ -36,7 +36,7 @@ public class Utils {
         }
     }
 
-    public static Object invoke(final Object target, final Method method, long timeoutMillis, final Object... args) throws Throwable {
+    public static Object invoke(final Object target, final Method method, int timeoutMillis, final Object... args) throws Throwable {
         return Timeout.timeout(new Timeout.Callback<Object>() {
             @Override
             public Object call() throws Throwable {
