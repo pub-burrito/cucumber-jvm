@@ -371,6 +371,7 @@ public class CucumberInstrumentation extends InstrumentationTestRunner {
             {
             	cucumberFeature.run(formatter, reporter, mRuntime);
             } 
+            /*
             catch (Throwable t)
             {
             	//FIXME: Report errors/failure when exception happens during hook execution (either on first pass - dry run - or during test execution)
@@ -380,6 +381,11 @@ public class CucumberInstrumentation extends InstrumentationTestRunner {
             	//sendStatus( InstrumentationTestRunner.REPORT_VALUE_RESULT_ERROR, new Bundle() );
             	
             	throw new RuntimeException( t );
+            }
+            */
+            finally
+            {
+            	Log.d( TAG, "- Errors: " + mRuntime.getErrors() );
             }
         }
         
@@ -426,7 +432,11 @@ public class CucumberInstrumentation extends InstrumentationTestRunner {
      */
     @SuppressWarnings( "unused" )
     private class AndroidReporter implements Formatter, Reporter {
-        private final AndroidFormatter mFormatter;
+    	
+		private static final int MAX_BUNDLE_SIZE = 1024 * 1024 / 2; //1MB otherwise we can start getting failures of the suite and see error https://code.google.com/p/android/issues/detail?id=18660
+		private static final int BUFFER_SIZE = 10 * 1024; //1KB so we can fit some more info into the bundle
+		
+		private final AndroidFormatter mFormatter;
         private final Bundle mResultTemplate;
         private Bundle mTestResult;
         private Bundle mParentBundle;
@@ -689,9 +699,40 @@ public class CucumberInstrumentation extends InstrumentationTestRunner {
         	 * Reporting errors or missing step definitions
         	 */
             if (result.getError() != null) {
-                mTestResult.putString(REPORT_KEY_STACK, result.getErrorMessage());
+                String errorMessage = result.getErrorMessage();
+                String streamResult = errorMessage;
+                
+                int errorMessageLength = errorMessage.length();
+                
+                Log.v( TAG, "- Error Length: " + errorMessageLength );
+                
+				if ( errorMessageLength > MAX_BUNDLE_SIZE )
+                {
+                	int trimmedErrorSize = MAX_BUNDLE_SIZE - BUFFER_SIZE;
+                	
+					errorMessage = errorMessage.substring( 0, trimmedErrorSize ); //buffer for other info on bundle
+                	streamResult = ".";
+                	
+                	Log.v( TAG, "- Trimmed error to: " + trimmedErrorSize + " bytes" );
+                }
+                else if ( errorMessageLength + streamResult.length() > MAX_BUNDLE_SIZE )
+                {
+                	int streamResultSize = Math.max( 0, MAX_BUNDLE_SIZE - errorMessageLength - BUFFER_SIZE );
+                	
+					streamResult = streamResult.substring( 0, streamResultSize ); //trimming it down so it fits in the bundle
+					
+					Log.v( TAG, "- Trimmed streamResult to: " + streamResultSize + " bytes" );
+                }
+				
+				Log.v( TAG, "- Stack + streamResult Length: " + errorMessage.length() + streamResult.length() );
+                
                 mTestResultCode = REPORT_VALUE_RESULT_FAILURE;
-                mTestResult.putString(Instrumentation.REPORT_KEY_STREAMRESULT, result.getErrorMessage());
+				mTestResult.putString(REPORT_KEY_STACK, errorMessage);
+
+                if ( streamResult != null )
+                {
+                	mTestResult.putString(Instrumentation.REPORT_KEY_STREAMRESULT, streamResult );
+                }
                 
             } else if (result.getStatus().equals("undefined")) {
                 // There was a missing step definition, report an error.
@@ -741,6 +782,8 @@ public class CucumberInstrumentation extends InstrumentationTestRunner {
         }
 
         private void reportLastResult() {
+        	//Log.d( TAG, "Reporting result: " + mTestResult );
+        	
             if (mScenarioNum != 0 && mTestResult != mLastTestResult) {
                 if (mTestResultCode == 0) {
                     mTestResult.putString(Instrumentation.REPORT_KEY_STREAMRESULT, ".");
@@ -765,7 +808,7 @@ public class CucumberInstrumentation extends InstrumentationTestRunner {
 					mTestResult.putBoolean( "Skipped", true );
 				}
 				
-				//Log.v( TAG, "Result for " + current + " (parent: " + parentNum + ", lastChild: " + parentLastChildNum + "): " + mTestResultCode );
+				//Log.v( TAG, "Result for " + keyword + "#" + current + " (parent: " + parentNum + ", lastChild: " + parentLastChildNum + "): " + mTestResultCode );
 				
 				if (isIndividualScenario || isOutlineScenario){
                 	sendStatus(mTestResultCode, mTestResult);
