@@ -95,8 +95,11 @@ public class RuntimeOptionsFactory {
     private void addTags(Cucumber.Options options, List<String> args) {
         if (options != null) {
             for (String tags : options.tags()) {
-                args.add("--tags");
-                args.add(tags);
+            	for ( String tag : tags.split( " & " ) )
+            	{
+            		args.add("--tags");
+                	args.add( tag );
+				}
             }
         }
     }

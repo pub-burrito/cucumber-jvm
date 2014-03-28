@@ -3,6 +3,7 @@ package cucumber.api.android;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -70,7 +71,7 @@ public class CucumberInstrumentation extends InstrumentationTestRunner {
     private ClassLoader mClassLoader;
     private Runtime mRuntime;
     private String[] mPackagesOfTests;
-    private String mFeatures;
+    private String[] mFeatures;
     private String[] mTags;
     private String mFilter;
     
@@ -136,7 +137,7 @@ public class CucumberInstrumentation extends InstrumentationTestRunner {
             if (testClass.indexOf("#") != -1) { //executing a particular method/feature
             	String method = testClass.substring(testClass.indexOf("#") + 1);
             	
-            	mFeatures = method.replaceAll("__", "/") + ".feature";
+            	mFeatures = new String[] { method.replaceAll("__", "/") + ".feature" };
             	testClass = testClass.substring(0, testClass.indexOf("#"));
             }
 
@@ -187,21 +188,42 @@ public class CucumberInstrumentation extends InstrumentationTestRunner {
         if (!TextUtils.isEmpty( mFilter )) {
         	cmdLineArgs.append(String.format(" --name %s ", mFilter.replaceAll(" ", "\\\\s")));
         } else {
+        	List<String> inclusiveTags = new ArrayList<String>();
+        	
 	        for (String tag : mTags) {
 	        	cmdLineArgs.append(String.format(" --tags %s ", tag.replaceAll(" ", "\\\\s")));
 	        	
 	        	if ( tag.startsWith( "@" ) ) //inclusive tag, filter features by it to save resources when loading/parsing files. 
 	        	{
-	        		mFeatures += String.format( "{%s}", tag );
+	        		inclusiveTags.add( tag );
 	        	}
 			}
+	        
+	        if ( !inclusiveTags.isEmpty() )
+	        {
+	        	List<String> unifiedFeatures = new ArrayList<String>();
+	        	
+	        	if ( mFeatures != null )
+	        	{
+	        		unifiedFeatures.addAll( Arrays.asList( mFeatures ) );
+	        	}
+	        	unifiedFeatures.addAll( inclusiveTags );
+	        	
+	        	mFeatures = unifiedFeatures.toArray( new String[0] );
+	        }
         }
 	     
         for (String pkg : mPackagesOfTests) {
         	cmdLineArgs.append(String.format(" --glue %s ", pkg));
 		}
         
-        cmdLineArgs.append(String.format(" %s ", mFeatures));
+        if ( mFeatures != null )
+        {
+	        for ( String feature : mFeatures )
+			{
+	        	cmdLineArgs.append( String.format(" %s ", feature) );
+			}
+        }
         
         properties.setProperty("cucumber.options", cmdLineArgs.toString());
         
@@ -301,16 +323,34 @@ public class CucumberInstrumentation extends InstrumentationTestRunner {
         if (annotation != null) {
             // isEmpty() only available in Android API 9+
             mPackagesOfTests = annotation.glue().length == 0 || annotation.glue()[0].equals("") ? new String[] { defaultGlue() } : annotation.glue();
-            mFeatures = annotation.features().equals("") ? defaultFeatures() : annotation.features() + (mFeatures != null ? "/" + mFeatures : "");
-            mTags = annotation.tags().equals("") ? defaultTags() : annotation.tags().split( "\\s*&\\s*" );
+            
+            mFeatures = 
+            	annotation.features().length == 0 ? 
+            		defaultFeatures() : 
+            		(mFeatures != null ? 
+            			new String[] { "/" + mFeatures[0] } : //specific feature 
+            			annotation.features() //list of features
+            		);
+            		
+            List<String> tags = Arrays.asList( annotation.tags().length == 0 ? defaultTags() : annotation.tags() );
+            for ( String tagExpression : new ArrayList<String>( tags ) )
+			{
+            	if ( tagExpression.contains( " & " ) )
+            	{
+            		tags.remove( tagExpression );
+            		tags.addAll( Arrays.asList( tagExpression.split( " & " ) ) );
+            	}
+			}
+            mTags = tags.toArray( new String[0] );
+            
             mFilter = annotation.filter();
             return true;
         }
         return false;
     }
 
-    private String defaultFeatures() {
-        return "features";
+    private String[] defaultFeatures() {
+        return new String[] { "features" };
     }
 
     private String defaultGlue() {
