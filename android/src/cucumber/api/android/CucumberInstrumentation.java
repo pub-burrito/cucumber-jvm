@@ -207,6 +207,7 @@ public class CucumberInstrumentation extends InstrumentationTestRunner {
 	        	{
 	        		unifiedFeatures.addAll( Arrays.asList( mFeatures ) );
 	        	}
+	        	
 	        	unifiedFeatures.addAll( inclusiveTags );
 	        	
 	        	mFeatures = unifiedFeatures.toArray( new String[0] );
@@ -332,7 +333,7 @@ public class CucumberInstrumentation extends InstrumentationTestRunner {
             			annotation.features() //list of features
             		);
             		
-            List<String> tags = Arrays.asList( annotation.tags().length == 0 ? defaultTags() : annotation.tags() );
+            List<String> tags = new ArrayList<String>( Arrays.asList( annotation.tags().length == 0 ? defaultTags() : annotation.tags() ) );
             for ( String tagExpression : new ArrayList<String>( tags ) )
 			{
             	if ( tagExpression.contains( " & " ) )
