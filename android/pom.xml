@@ -54,7 +54,7 @@
         <dependency>
         	<groupId>info.cukes</groupId>
         	<artifactId>gherkin</artifactId>
-        	<scope>runtime</scope>
+        	<scope>provided</scope>
         </dependency>
         
         <!-- 
