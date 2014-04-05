@@ -1,6 +1,6 @@
 package cucumber.runtime.junit;
 
-import cucumber.api.PendingException;
+import static cucumber.runtime.Runtime.isPending;
 import gherkin.formatter.Formatter;
 import gherkin.formatter.Reporter;
 import gherkin.formatter.model.Background;
@@ -10,16 +10,21 @@ import gherkin.formatter.model.Result;
 import gherkin.formatter.model.Scenario;
 import gherkin.formatter.model.ScenarioOutline;
 import gherkin.formatter.model.Step;
-import org.junit.internal.runners.model.EachTestNotifier;
-import org.junit.runner.Description;
-import org.junit.runner.notification.RunNotifier;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import static cucumber.runtime.Runtime.isPending;
+import org.apache.log4j.Logger;
+import org.junit.internal.runners.model.EachTestNotifier;
+import org.junit.runner.Description;
+import org.junit.runner.notification.RunNotifier;
+
+import cucumber.api.PendingException;
 
 public class JUnitReporter implements Reporter, Formatter {
+	
+	private final static Logger LOG = Logger.getLogger( JUnitReporter.class );
+	
     private final List<Step> steps = new ArrayList<Step>();
 
     private final Reporter reporter;
@@ -31,6 +36,8 @@ public class JUnitReporter implements Reporter, Formatter {
     private RunNotifier runNotifier;
     EachTestNotifier executionUnitNotifier;
     private boolean ignoredStep;
+
+    private String uri;
 
     public JUnitReporter(Reporter reporter, Formatter formatter, boolean strict) {
         this.reporter = reporter;
@@ -143,38 +150,65 @@ public class JUnitReporter implements Reporter, Formatter {
 
     @Override
     public void uri(String uri) {
+    	this.uri = uri;
         formatter.uri(uri);
     }
 
     @Override
     public void feature(gherkin.formatter.model.Feature feature) {
         formatter.feature(feature);
+        
+        String description = String.format("* %s: %s (%s)%n%s *", feature.getKeyword(), feature.getName(), uri, feature.getDescription());
+        
+        LOG.debug("");
+        LOG.debug(description.replaceAll( ".", "*" ));
+		LOG.debug(description);
+		LOG.debug(description.replaceAll( ".", "*" ));
+		LOG.debug("");
     }
 
     @Override
     public void background(Background background) {
         formatter.background(background);
+        
+        LOG.debug(background.getName());
     }
 
     @Override
     public void scenario(Scenario scenario) {
         formatter.scenario(scenario);
+        
+        String description = String.format("%s: %s", scenario.getKeyword(), scenario.getName());
+
+        LOG.debug("");
+		LOG.debug(description);
+		LOG.debug(description.replaceAll( ".", "-" ));
     }
 
     @Override
     public void scenarioOutline(ScenarioOutline scenarioOutline) {
         formatter.scenarioOutline(scenarioOutline);
+        
+        String description = String.format("%s: %s", scenarioOutline.getKeyword(), scenarioOutline.getName());
+
+        LOG.debug("");
+		LOG.debug(description);
+		LOG.debug(description.replaceAll( ".", "=" ));
     }
 
     @Override
     public void examples(Examples examples) {
         formatter.examples(examples);
+        
+        LOG.debug(String.format("  %s: %s (#%s)", examples.getKeyword(), examples.getName(), examples.getRows() != null ? examples.getRows().size() : 0));
     }
 
     @Override
     public void step(Step step) {
         steps.add(step);
         formatter.step(step);
+        
+        LOG.debug(String.format("\t%s%s", step.getKeyword(), step.getName()));
     }
 
     @Override

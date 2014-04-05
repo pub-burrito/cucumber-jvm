@@ -1,20 +1,24 @@
 package cucumber.runtime.java;
 
-import cucumber.api.Scenario;
-import cucumber.runtime.CucumberException;
-import cucumber.runtime.HookDefinition;
-import cucumber.runtime.MethodFormat;
-import cucumber.runtime.Utils;
+import static java.util.Arrays.asList;
 import gherkin.TagExpression;
 import gherkin.formatter.model.Tag;
 
 import java.lang.reflect.Method;
 import java.util.Collection;
 
-import static java.util.Arrays.asList;
+import org.apache.log4j.Logger;
+
+import cucumber.api.Scenario;
+import cucumber.runtime.CucumberException;
+import cucumber.runtime.HookDefinition;
+import cucumber.runtime.MethodFormat;
+import cucumber.runtime.Utils;
 
 class JavaHookDefinition implements HookDefinition {
 
+	private final static Logger LOG = Logger.getLogger( JavaHookDefinition.class );
+	
     private final Method method;
     private final int timeout;
     private final TagExpression tagExpression;
@@ -56,7 +60,11 @@ class JavaHookDefinition implements HookDefinition {
                 throw new CucumberException("Hooks must declare 0 or 1 arguments. " + method.toString());
         }
 
-        Utils.invoke(objectFactory.getInstance(method.getDeclaringClass()), method, timeout, args);
+        final Object hookInstance = objectFactory.getInstance(method.getDeclaringClass());
+        
+		LOG.debug( "\t - Executing hook definition " + hookInstance + "." + method.getName());
+
+        Utils.invoke(hookInstance, method, timeout, args);
     }
 
     @Override
