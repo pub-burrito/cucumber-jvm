@@ -20,6 +20,7 @@ import android.content.SharedPreferences;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Looper;
+import android.os.Parcel;
 import android.test.InstrumentationTestRunner;
 import android.text.TextUtils;
 import android.util.Log;
@@ -462,8 +463,20 @@ public class CucumberInstrumentation extends InstrumentationTestRunner {
     
     public void sendStatus(int resultCode, Bundle results)
 	{
-		//Log.v(TAG, "Status=" + resultCode + ", Bundle: " + results.getInt( "current" ));
-		
+    	Log.v(TAG, "Checking size of result bundle...");
+    	
+    	Parcel parcel = Parcel.obtain();
+    	try
+    	{
+			results.writeToParcel( parcel, 0 );
+			
+			Log.v(TAG, "Status=" + resultCode + ", Bundle: " + results.getInt( "current" ) + ", Size: " + parcel.dataSize());
+    	}
+    	finally
+    	{
+    		parcel.recycle();
+    	}
+    	
 		super.sendStatus( resultCode, results );
 	}
 
@@ -475,7 +488,7 @@ public class CucumberInstrumentation extends InstrumentationTestRunner {
     private class AndroidReporter implements Formatter, Reporter {
     	
 		private static final int MAX_BUNDLE_SIZE = 1024 * 1024 / 2; //1MB otherwise we can start getting failures of the suite and see error https://code.google.com/p/android/issues/detail?id=18660
-		private static final int BUFFER_SIZE = 10 * 1024; //1KB so we can fit some more info into the bundle
+		private static final int BUFFER_SIZE = 10 * 1024; //10KB so we can fit some more info into the bundle
 		
 		private final AndroidFormatter mFormatter;
         private final Bundle mResultTemplate;
