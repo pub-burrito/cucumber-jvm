@@ -7,6 +7,7 @@ import gherkin.formatter.model.Tag;
 import java.lang.reflect.Method;
 import java.util.Collection;
 
+import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 
 import cucumber.api.Scenario;
@@ -18,6 +19,10 @@ import cucumber.runtime.Utils;
 class JavaHookDefinition implements HookDefinition {
 
 	private final static Logger LOG = Logger.getLogger( JavaHookDefinition.class );
+	static
+	{
+		LOG.setLevel( Level.TRACE );
+	}
 	
     private final Method method;
     private final int timeout;

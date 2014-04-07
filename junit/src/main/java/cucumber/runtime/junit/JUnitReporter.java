@@ -14,6 +14,7 @@ import gherkin.formatter.model.Step;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.junit.internal.runners.model.EachTestNotifier;
 import org.junit.runner.Description;
@@ -24,6 +25,10 @@ import cucumber.api.PendingException;
 public class JUnitReporter implements Reporter, Formatter {
 	
 	private final static Logger LOG = Logger.getLogger( JUnitReporter.class );
+	static
+	{
+		LOG.setLevel( Level.TRACE );
+	}
 	
     private final List<Step> steps = new ArrayList<Step>();
 
@@ -158,7 +163,7 @@ public class JUnitReporter implements Reporter, Formatter {
     public void feature(gherkin.formatter.model.Feature feature) {
         formatter.feature(feature);
         
-        String description = String.format("* %s: %s (%s)%n%s *", feature.getKeyword(), feature.getName(), uri, feature.getDescription());
+        String description = String.format("* %s: %s (%s) *", feature.getKeyword(), feature.getName(), uri );
         
         LOG.debug("");
         LOG.debug(description.replaceAll( ".", "*" ));
