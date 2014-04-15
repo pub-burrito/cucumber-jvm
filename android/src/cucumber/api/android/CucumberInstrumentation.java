@@ -778,7 +778,7 @@ public class CucumberInstrumentation extends InstrumentationTestRunner {
 					Log.v( TAG, "- Trimmed streamResult to: " + streamResultSize + " bytes" );
                 }
 				
-				Log.v( TAG, "- Stack + streamResult Length: " + errorMessage.length() + streamResult.length() );
+				Log.v( TAG, "- Stack + streamResult Length: " + ( errorMessage.length() + streamResult.length() ) );
                 
                 mTestResultCode = REPORT_VALUE_RESULT_FAILURE;
 				mTestResult.putString(REPORT_KEY_STACK, errorMessage);
