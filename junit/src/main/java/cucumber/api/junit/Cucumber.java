@@ -87,7 +87,11 @@ public class Cucumber extends ParentRunner<FeatureRunner> {
     }
 
     private void addChildren(List<CucumberFeature> cucumberFeatures) throws InitializationError {
+    	System.out.println( "- Features to test:" );
+    	
         for (CucumberFeature cucumberFeature : cucumberFeatures) {
+        	System.out.println( " - Feature: " + cucumberFeature.getGherkinFeature().getName() );
+        	
             children.add(new FeatureRunner(cucumberFeature, runtime, jUnitReporter));
         }
     }

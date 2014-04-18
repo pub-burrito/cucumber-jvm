@@ -82,9 +82,11 @@ public class PathWithPredicates
 		{
 			String resourcePath = String.format( "%s%s", pathWithPredicates.getPath(), resource.getPath() );
 			
-			//System.out.println( "Matching " + resourcePath + " to " + pathWithPredicates.namePredicate );
+			boolean matches = pathWithPredicates.hasPredicate && resourcePath.matches( pathWithPredicates.namePredicate );
 			
-			return pathWithPredicates.hasPredicate && resourcePath.matches( pathWithPredicates.namePredicate );
+			System.out.println( "- Matching '" + resourcePath + "' to " + pathWithPredicates.namePredicate + " = " + matches );
+			
+			return matches;
 		}
 		
 		public boolean matchesContent( Resource resource )

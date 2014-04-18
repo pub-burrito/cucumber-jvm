@@ -17,6 +17,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.log4j.Logger;
+
 import cucumber.runtime.CucumberException;
 import cucumber.runtime.FeatureBuilder;
 import cucumber.runtime.PathWithPredicates.PathPredicateFilter;
@@ -25,6 +27,9 @@ import cucumber.runtime.io.Resource;
 import cucumber.runtime.io.ResourceLoader;
 
 public class CucumberFeature {
+	
+	private static final Logger LOG = Logger.getLogger( CucumberFeature.class );
+	
     private final String uri;
     private final Feature feature;
     private CucumberBackground cucumberBackground;
@@ -67,6 +72,8 @@ public class CucumberFeature {
 	            for (Resource resource : resources) {
 	            	if ( pathFilter == null || pathFilter.matches( resource ) )
 	            	{
+	            		LOG.debug( "- Parsing Feature: " + resource.getPath() );
+	            		
 		                resourceFound = true;
 		                builder.parse(resource, otherFilters);
 	            	}
