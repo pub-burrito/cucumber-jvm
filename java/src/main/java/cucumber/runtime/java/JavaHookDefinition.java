@@ -6,9 +6,8 @@ import gherkin.formatter.model.Tag;
 
 import java.lang.reflect.Method;
 import java.util.Collection;
-
-import org.apache.log4j.Level;
-import org.apache.log4j.Logger;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import cucumber.api.Scenario;
 import cucumber.runtime.CucumberException;
@@ -18,10 +17,10 @@ import cucumber.runtime.Utils;
 
 class JavaHookDefinition implements HookDefinition {
 
-	private final static Logger LOG = Logger.getLogger( JavaHookDefinition.class );
+	private final static Logger LOG = Logger.getLogger( JavaHookDefinition.class.getSimpleName() );
 	static
 	{
-		LOG.setLevel( Level.TRACE );
+		LOG.setLevel( Level.FINE );
 	}
 	
     private final Method method;
@@ -67,7 +66,7 @@ class JavaHookDefinition implements HookDefinition {
 
         final Object hookInstance = objectFactory.getInstance(method.getDeclaringClass());
         
-		LOG.debug( "\t - Executing hook definition " + hookInstance + "." + method.getName());
+        LOG.log( Level.FINE, "\t - Executing hook definition " + hookInstance + "." + method.getName() );
 
         Utils.invoke(hookInstance, method, timeout, args);
     }
