@@ -9,13 +9,16 @@ import java.util.regex.Pattern;
 
 public class JdkPatternArgumentMatcher {
     private final Pattern pattern;
+    private final Matcher matcher;
 
     public JdkPatternArgumentMatcher(Pattern pattern) {
         this.pattern = pattern;
+        this.matcher = pattern.matcher( "" );
     }
 
     public List<Argument> argumentsFrom(String stepName) {
-        Matcher matcher = pattern.matcher(stepName);
+        matcher.reset(stepName);
+        
         if (matcher.lookingAt()) {
             List<Argument> arguments = new ArrayList<Argument>(matcher.groupCount());
             for (int i = 1; i <= matcher.groupCount(); i++) {
