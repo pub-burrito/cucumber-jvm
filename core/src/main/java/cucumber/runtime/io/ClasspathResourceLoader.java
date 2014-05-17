@@ -1,13 +1,13 @@
 package cucumber.runtime.io;
 
-import cucumber.runtime.CucumberException;
-import cucumber.runtime.Utils;
-
 import java.io.File;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Collection;
 import java.util.HashSet;
+
+import cucumber.runtime.CucumberException;
+import cucumber.runtime.Utils;
 
 public class ClasspathResourceLoader implements ResourceLoader {
     private final ClassLoader classLoader;
@@ -28,13 +28,13 @@ public class ClasspathResourceLoader implements ResourceLoader {
     public <T> Collection<Class<? extends T>> getDescendants(Class<T> parentType, String packageName) {
         String packagePath = packageName.replace('.', '/').replace(File.separatorChar, '/');
         
-        System.out.println("Looking up descendants of: " + parentType + " in: " + packageName);
+        //System.out.println("Looking up descendants of: " + parentType + " in: " + packageName);
         
         Collection<Class<? extends T>> result = new HashSet<Class<? extends T>>();
         for (Resource classResource : resources(packagePath, ".class")) {
             String className = classResource.getClassName();
             
-            System.out.println("- " + className);
+            //System.out.println("- " + className);
             
             Class<?> clazz = loadClass(className, classLoader);
             if (clazz != null && !parentType.equals(clazz) && parentType.isAssignableFrom(clazz)) {

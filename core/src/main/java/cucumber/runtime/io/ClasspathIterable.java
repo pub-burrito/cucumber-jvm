@@ -29,13 +29,13 @@ public class ClasspathIterable implements Iterable<Resource> {
         try {
             FlatteningIterator iterator = new FlatteningIterator();
             
-            System.out.println("- Looking up '" + path + "' on classloader: " + cl);
+            //System.out.println("- Looking up '" + path + "' on classloader: " + cl);
             
             Enumeration<URL> resources = cl.getResources(path);
             while (resources.hasMoreElements()) {
                 URL url = resources.nextElement();
                 
-                System.out.println("- Resources: " + url);
+                //System.out.println("- Resources: " + url);
                 
                 iterator.push(this.resourceIteratorFactory.createIterator(url, path, suffix));
             }

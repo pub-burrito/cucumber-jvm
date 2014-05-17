@@ -84,7 +84,7 @@ public class PathWithPredicates
 			
 			boolean matches = pathWithPredicates.hasPredicate && resourcePath.matches( pathWithPredicates.namePredicate );
 			
-			System.out.println( "- Matching '" + resourcePath + "' to " + pathWithPredicates.namePredicate + " = " + matches );
+			//System.out.println( "- Matching '" + resourcePath + "' to " + pathWithPredicates.namePredicate + " = " + matches );
 			
 			return matches;
 		}
