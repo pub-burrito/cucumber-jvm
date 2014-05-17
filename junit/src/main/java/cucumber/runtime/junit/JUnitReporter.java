@@ -68,8 +68,10 @@ public class JUnitReporter implements Reporter, Formatter {
     }
 
     public void match(Match match) {
+    	/*
         Description description = executionUnitRunner.describeChild(steps.remove(0));
         stepNotifier = new EachTestNotifier(runNotifier, description);
+        */
         reporter.match(match);
     }
 
@@ -86,7 +88,10 @@ public class JUnitReporter implements Reporter, Formatter {
     public void result(Result result) {
         Throwable error = result.getError();
         if (Result.SKIPPED == result) {
-            stepNotifier.fireTestIgnored();
+        	if ( stepNotifier != null )
+        	{
+        		stepNotifier.fireTestIgnored();
+        	}
         } else if (isPendingOrUndefined(result)) {
             addFailureOrIgnoreStep(result);
         } else {

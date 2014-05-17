@@ -26,6 +26,10 @@ public class StepContainer {
     public void step(Step step) {
         steps.add(step);
     }
+    
+    public CucumberFeature getFeature() {
+    	return cucumberFeature;
+    }
 
     void format(Formatter formatter) {
         statement.replay(formatter);

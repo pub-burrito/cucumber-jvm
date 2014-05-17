@@ -1,22 +1,25 @@
 package cucumber.runtime.junit;
 
+import gherkin.formatter.model.Feature;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import org.junit.runner.Description;
+import org.junit.runner.Runner;
+import org.junit.runner.notification.RunNotifier;
+import org.junit.runners.ParentRunner;
+import org.junit.runners.model.InitializationError;
+
 import cucumber.runtime.CucumberException;
 import cucumber.runtime.Runtime;
 import cucumber.runtime.model.CucumberFeature;
 import cucumber.runtime.model.CucumberScenario;
 import cucumber.runtime.model.CucumberScenarioOutline;
 import cucumber.runtime.model.CucumberTagStatement;
-import gherkin.formatter.model.Feature;
-import org.junit.runner.Description;
-import org.junit.runner.notification.RunNotifier;
-import org.junit.runners.ParentRunner;
-import org.junit.runners.model.InitializationError;
 
-import java.util.ArrayList;
-import java.util.List;
-
-public class FeatureRunner extends ParentRunner<ParentRunner> {
-    private final List<ParentRunner> children = new ArrayList<ParentRunner>();
+public class FeatureRunner extends ParentRunner<Runner> {
+    private final List<Runner> children = new ArrayList<Runner>();
 
     private final CucumberFeature cucumberFeature;
     private final Runtime runtime;
@@ -41,7 +44,7 @@ public class FeatureRunner extends ParentRunner<ParentRunner> {
     public Description getDescription() {
         if (description == null) {
             description = Description.createSuiteDescription(getName(), cucumberFeature.getGherkinFeature());
-            for (ParentRunner child : getChildren()) {
+            for (Runner child : getChildren()) {
                 description.addChild(describeChild(child));
             }
         }
@@ -49,17 +52,17 @@ public class FeatureRunner extends ParentRunner<ParentRunner> {
     }
 
     @Override
-    protected List<ParentRunner> getChildren() {
+    protected List<Runner> getChildren() {
         return children;
     }
 
     @Override
-    protected Description describeChild(ParentRunner child) {
+    protected Description describeChild(Runner child) {
         return child.getDescription();
     }
 
     @Override
-    protected void runChild(ParentRunner child, RunNotifier notifier) {
+    protected void runChild(Runner child, RunNotifier notifier) {
         child.run(notifier);
     }
 
@@ -74,7 +77,7 @@ public class FeatureRunner extends ParentRunner<ParentRunner> {
     private void buildFeatureElementRunners() {
         for (CucumberTagStatement cucumberTagStatement : cucumberFeature.getFeatureElements()) {
             try {
-                ParentRunner featureElementRunner;
+                Runner featureElementRunner;
                 if (cucumberTagStatement instanceof CucumberScenario) {
                     featureElementRunner = new ExecutionUnitRunner(runtime, (CucumberScenario) cucumberTagStatement, jUnitReporter);
                 } else {
