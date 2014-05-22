@@ -17,7 +17,6 @@ import java.util.List;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.junit.internal.runners.model.EachTestNotifier;
-import org.junit.runner.Description;
 import org.junit.runner.notification.RunNotifier;
 
 import cucumber.api.PendingException;
@@ -126,7 +125,10 @@ public class JUnitReporter implements Reporter, Formatter {
             addFailure(result);
         } else {
             ignoredStep = true;
-            stepNotifier.fireTestIgnored();
+            if (stepNotifier != null) 
+        	{
+            	stepNotifier.fireTestIgnored();
+        	}
         }
     }
 
@@ -136,7 +138,10 @@ public class JUnitReporter implements Reporter, Formatter {
         if (error == null) {
             error = new PendingException();
         }
-        stepNotifier.addFailure(error);
+        if (stepNotifier != null) 
+    	{
+        	stepNotifier.addFailure(error);
+    	}
         executionUnitNotifier.addFailure(error);
     }
 
