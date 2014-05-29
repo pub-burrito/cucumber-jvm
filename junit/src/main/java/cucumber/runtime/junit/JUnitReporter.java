@@ -36,8 +36,12 @@ public class JUnitReporter implements Reporter, Formatter {
     private final boolean strict;
 
     EachTestNotifier stepNotifier;
-    private ExecutionUnitRunner executionUnitRunner;
+    
+    @SuppressWarnings( "unused" )
+	private ExecutionUnitRunner executionUnitRunner;
+    @SuppressWarnings( "unused" )
     private RunNotifier runNotifier;
+    
     EachTestNotifier executionUnitNotifier;
     private boolean ignoredStep;
 
