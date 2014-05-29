@@ -139,9 +139,18 @@ public class JUnitReporter implements Reporter, Formatter {
     private void addFailure(Result result) {
 
         Throwable error = result.getError();
+        
         if (error == null) {
-            error = new PendingException();
+        	if ( !steps.isEmpty() )
+        	{
+        		error = new PendingException( steps.get( steps.size() - 1 ).getName() );
+        	}
+        	else
+        	{
+        		error = new PendingException();
+        	}
         }
+        
         if (stepNotifier != null) 
     	{
         	stepNotifier.addFailure(error);
