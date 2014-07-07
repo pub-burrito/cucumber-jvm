@@ -416,7 +416,6 @@ public class CucumberInstrumentation extends InstrumentationTestRunner {
             /*
             catch (Throwable t)
             {
-            	//FIXME: Report errors/failure when exception happens during hook execution (either on first pass - dry run - or during test execution)
             	reporter.result( new Result( Result.FAILED, 0L, t, null ) );
             	reporter.eof();
             	
